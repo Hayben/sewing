@@ -28,6 +28,7 @@ hs_err_pid*
 # Files that might appear on external disk
 .Spotlight-V100
 .Trashes
+.setting
 
 # Directories potentially created on remote AFP share
 .AppleDB
@@ -57,3 +58,10 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+data
+lib
+.settings
+.classpath
+.project
+target

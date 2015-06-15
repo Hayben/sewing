@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE RelativeLayout>
+<ontology>
+
+    <class name="company" desc="公司">
+        <enum label="营业执照">
+            <allow>person_business_license</allow>
+            <allow>corp_business_licence</allow>
+            <allow>small_business_licence</allow>
+            <allow>partner_business_licence</allow>
+        </enum>
+        <list label="股东">
+            <allow>person</allow>
+            <allow>company</allow>
+        </list>
+        <list label="产品" >
+            <allow>product</allow>
+        </list>
+        <list label="资质">
+            <allow>award</allow>
+        </list>
+        <list label="组织架构">
+            <allow>department</allow>
+        </list>
+        <list label="法律纠纷">
+            <allow>legal</allow>
+        </list>
+        <list label="专利">
+            <allow>patent</allow>
+        </list>
+        <list label="财务">
+            <allow>finance</allow>
+        </list>
+    </class>
+
+
+    <class name="address" desc="地址">
+        <province>省</province>
+        <city>市</city>
+        <district>区</district>
+        <street>街道</street>
+        <string>门牌</string>
+    </class>
+
+
+    <enum name="street" desc="街道">
+        <!-- 崇安区 -->
+
+        <!-- 南长区 -->
+
+        <!-- 北塘区 -->
+
+        <!-- 锡山区 -->
+
+        <!-- 惠山区 -->
+
+        <!-- 滨湖区 -->
+
+        <!-- 江阴市 -->
+
+        <!-- 宜兴市 -->
+
+    </enum>
+
+
+
+</ontology>
