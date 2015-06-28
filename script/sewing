@@ -1,0 +1,37 @@
+#!/bin/bash
+
+PROGRAM="$0"
+
+# if no args specified, show usage
+if [ $# = 0 ]; then
+	echo "sewing 1.0-SNAPSHOT"
+	echo "Usage: sewing COMMAND"
+	echo "where COMMAND is one of:"
+	echo " webservice 			management service on web"
+	echo " fetch				fetch pages of url list"
+	echo " index				make id network"
+	exit 1
+fi
+
+# get arguments
+COMMAND=$1
+shift
+
+SEWING_HOME="`dirname $PROGRAM`"
+
+# set log directory & file
+LOG_DIR="$SEWING_HOME/logs"
+LOG_FILE="sewing.log"
+
+if [ "$COMMAND" = "webservice" ]; then
+	CLASS=com.sidooo.webService.WebService
+elif [ "$COMMAND" = "fetch" ]; then
+	CLASS=com.sdiooo.fetcher.Crawl
+elif [ "$COMMAND" = "index" ]; then
+	CLASS=com.sidooo.point.Indexer
+else
+	CLASS=$COMMAND
+fi
+
+exec hadoop cp sewing-1.0-SNAPSHOT.jar $CLASS 
+
