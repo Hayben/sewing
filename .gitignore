@@ -65,3 +65,4 @@ lib
 .classpath
 .project
 target
+*.log
