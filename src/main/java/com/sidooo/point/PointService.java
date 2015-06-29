@@ -161,4 +161,8 @@ public class PointService {
 		return itemRepo.getItemCountBySeed(seedId);
 	}
 
+	public Item getItem(String id) {
+		return itemRepo.getItem(id);
+	}
+
 }

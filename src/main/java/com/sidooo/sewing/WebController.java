@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.sidooo.ai.Attribute;
 import com.sidooo.ai.Recognition;
 import com.sidooo.division.DivisionService;
+import com.sidooo.point.Item;
 import com.sidooo.point.Network;
 import com.sidooo.point.NetworkStatus;
 import com.sidooo.point.Pagination;
@@ -310,10 +311,18 @@ public class WebController {
 	public @ResponseBody Network search(@RequestParam String key,
 			@RequestParam int depth) throws Exception {
 		Network network = pointService.search(key, depth);
-		System.out.println("Point:" + network.getPoints().length + ",Link:"
-				+ network.getLinks().length);
+		if (network != null) {
+			System.out.println("Point:" + network.getPoints().length + ",Link:"
+					+ network.getLinks().length);	
+		}
 		return network;
 	}
+	
+	@RequestMapping(value="/item/query", method=RequestMethod.GET)
+	public @ResponseBody Item getItem(@RequestParam String id) {
+		return pointService.getItem(id);
+	}
+	
 	//
 	// // private final EntityService entityService;
 	// //
