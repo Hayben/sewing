@@ -44,6 +44,7 @@ public class DeployLink extends SewingConfigured implements Tool{
 		public void map(Text key, Link value,
 				OutputCollector<NullWritable, NullWritable> output,
 				Reporter reporter) throws IOException {
+			LOG.info("Keyword:"+value.getKeyword() + ", Point Count:" + value.getPointList().length);
 			linkRepo.createLink(value);
 		}
 

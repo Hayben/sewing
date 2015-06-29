@@ -9,7 +9,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.sidooo.ai.IDKeyword;
 import com.sidooo.ai.Recognition;
 
 import junit.framework.TestCase;
@@ -109,15 +108,15 @@ public class TestRecognition extends TestCase {
 		
 		String content = readFile(file);
 		System.out.println(content);
-		IDKeyword[] keywords = recog.search(content);
+		Keyword[] keywords = recog.search(content);
 		assertEquals(3, keywords.length);
-		for(IDKeyword keyword : keywords) {
-			if ("mobile".equals(keyword.attr)) {
-				assertEquals("13916082774", keyword.word);
-			} else if ("email".equals(keyword.attr)) {
-				assertEquals("velax_wu@sohu.com", keyword.word);
-			} else if ("ssn".equals(keyword.attr)) {
-				assertEquals("360430198405111111", keyword.word);
+		for(Keyword keyword : keywords) {
+			if ("mobile".equals(keyword.getAttr())) {
+				assertEquals("13916082774", keyword.getWord());
+			} else if ("email".equals(keyword.getAttr())) {
+				assertEquals("velax_wu@sohu.com", keyword.getWord());
+			} else if ("ssn".equals(keyword.getAttr())) {
+				assertEquals("360430198405111111", keyword.getWord());
 			} else {
 				assertTrue(false);
 			}
@@ -131,16 +130,16 @@ public class TestRecognition extends TestCase {
 		
 		String content = readFile(file);
 		
-		IDKeyword[] keywords = recog.search(content);
-		for(IDKeyword keyword: keywords) {
-			System.out.println(keyword.attr + keyword.word);
+		Keyword[] keywords = recog.search(content);
+		for(Keyword keyword: keywords) {
+			System.out.println(keyword.getAttr() + keyword.getWord());
 		}
 		assertEquals(2, keywords.length);
-		for(IDKeyword keyword : keywords) {
-			if ("busrid".equals(keyword.attr)) {
-				assertEquals("320282000190134", keyword.word);
-			} else if ("org".equals(keyword.attr)) {
-				assertEquals("无锡市天茂胶辊有限公司", keyword.word);
+		for(Keyword keyword : keywords) {
+			if ("busrid".equals(keyword.getAttr())) {
+				assertEquals("320282000190134", keyword.getWord());
+			} else if ("org".equals(keyword.getAttr())) {
+				assertEquals("无锡市天茂胶辊有限公司", keyword.getWord());
 			} else {
 				assertTrue(false);
 			}

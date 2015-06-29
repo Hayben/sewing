@@ -13,6 +13,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import com.sidooo.ai.Keyword;
+
 
 /**
  * Created with IntelliJ IDEA.
@@ -33,12 +35,12 @@ public class Point implements Writable{
 	private String title;
 	
 	@Field("links")
-	private Set<String> links;
+	private Set<Keyword> links;
 	
 	public Point() {
 		docId = "";
 		title = "";
-		links = new HashSet<String>();
+		links = new HashSet<Keyword>();
 	}
 	
 	public String getDocId() {
@@ -57,12 +59,12 @@ public class Point implements Writable{
 		this.title = title;
 	}
 	
-	public String[] getLinks() {
-		return links.toArray(new String[links.size()]);
+	public Keyword[] getLinks() {
+		return links.toArray(new Keyword[links.size()]);
 	}
 	
-	public void addLink(String linkId) {
-		this.links.add(linkId);
+	public void addLink(Keyword keyword) {
+		this.links.add(keyword);
 	}
 	
 	public void removeLinks() {
@@ -70,8 +72,8 @@ public class Point implements Writable{
 	}
 	
 	public boolean existLink(String linkId) {
-		for(String link : links) {
-			if (link.equals(linkId)) {
+		for(Keyword link : links) {
+			if (link.getWord().equals(linkId)) {
 				return true;
 			}
 		}
@@ -84,8 +86,8 @@ public class Point implements Writable{
 		out.writeUTF(this.docId);
 		out.writeUTF(this.title);
 		out.writeInt(this.links.size());
-		for(String link : links) {
-			out.writeUTF(link);
+		for(Keyword link : links) {
+			link.write(out);
 		}
  	}
 	
@@ -97,12 +99,13 @@ public class Point implements Writable{
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
-		this.links.clear();
+		
 		this.docId = in.readUTF();
 		this.title = in.readUTF();
+		this.links.clear();
 		int count = in.readInt();
 		for(int i=0; i<count; i++) {
-			String link = in.readUTF();
+			Keyword link = Keyword.read(in);
 			this.links.add(link);
 		}
 	}

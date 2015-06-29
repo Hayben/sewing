@@ -68,6 +68,9 @@ public class Extractor extends SewingConfigured implements Tool {
 			}
 
 			byte[] content = fetch.getContent();
+			if (content == null || content.length < 8) {
+				return;
+			}
 
 			ContentExtractor extractor = ContentExtractor.getInstance(url);
 			if (extractor != null) {
@@ -75,6 +78,7 @@ public class Extractor extends SewingConfigured implements Tool {
 				extractor.extract(input);
 				List<Item> items = extractor.getItems();
 				for (Item item : items) {
+					item.setTitle(seed.getName());
 					output.collect(new Text(item.getId()), item);
 				}
 			}

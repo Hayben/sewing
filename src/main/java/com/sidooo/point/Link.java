@@ -78,9 +78,9 @@ public class Link implements Writable{
 
 	@Override
 	public void readFields(DataInput in) throws IOException {
-		this.points.clear();
 		this.keyword = in.readUTF();
 		this.type = in.readUTF();
+		this.points.clear();
 		int count = in.readInt();
 		for(int i=0; i<count; i++) {
 			String point = in.readUTF();

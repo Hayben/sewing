@@ -182,9 +182,9 @@ public class Recognition {
 		return null;
 	}
 	
-	public IDKeyword[] search(String content) {
+	public Keyword[] search(String content) {
 		
-		Set<IDKeyword> keywords = new HashSet<IDKeyword>();
+		Set<Keyword> keywords = new HashSet<Keyword>();
 		
 		String[] lines = content.split("\n");
 		if (lines.length == 2) {
@@ -198,13 +198,11 @@ public class Recognition {
 					for(int i=0; i<titles.length; i++) {
 						String attrId = match(values[i]);
 						if (attrId != null) {
-							IDKeyword keyword = new IDKeyword();
-							keyword.attr = attrId;
-							keyword.word = values[i];
+							Keyword keyword = new Keyword(values[i], attrId);
 							keywords.add(keyword);
 						}
 					}
-					return keywords.toArray(new IDKeyword[keywords.size()]);
+					return keywords.toArray(new Keyword[keywords.size()]);
 				}
 			}
 
@@ -219,9 +217,7 @@ public class Recognition {
 				!"有限责任公司".equals(term.word)) {
 				
 				if ("公司".equals(term.word.substring(term.word.length() - 2))) {
-					IDKeyword keyword = new IDKeyword();
-					keyword.attr = "org";
-					keyword.word = term.word;
+					Keyword keyword = new Keyword(term.word, "org");
 					keywords.add(keyword);
 				}
 
@@ -240,13 +236,11 @@ public class Recognition {
 			Pattern pat = Pattern.compile(attr.getRule());
 			Matcher mat= pat.matcher(content);
 			while(mat.find()) {
-				IDKeyword keyword = new IDKeyword();
-				keyword.attr = attr.getId();
-				keyword.word = mat.group();
+				Keyword keyword = new Keyword(mat.group(), attr.getId());
 				keywords.add(keyword);
 			}	
 		}
 		
-		return keywords.toArray(new IDKeyword[keywords.size()]);
+		return keywords.toArray(new Keyword[keywords.size()]);
 	}
 }

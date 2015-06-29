@@ -19,7 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
-import com.sidooo.ai.IDKeyword;
+import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
 import com.sidooo.point.Item;
 import com.sidooo.point.Link;
@@ -55,16 +55,17 @@ public class Analyst extends SewingConfigured implements Tool {
 				return;
 			}
 			
-			IDKeyword[] keywords = recognition.search(item.getContent());
+			Keyword[] keywords = recognition.search(item.getContent());
 			if (keywords == null || keywords.length <= 0) {
 				return;
 			}
 			Point point = new Point();
 			point.setDocId(item.getId());
 			point.setTitle(item.getTitle());
-			for (IDKeyword keyword : keywords) {
-				point.addLink(keyword.word);
+			for (Keyword keyword : keywords) {
+				point.addLink(keyword);
 			}
+			LOG.info("PointId:"+key.toString() + ", Keyword Count:" + point.getLinks().length);
 			output.collect(key, point);
 		}
 

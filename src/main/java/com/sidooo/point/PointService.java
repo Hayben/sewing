@@ -1,6 +1,6 @@
 package com.sidooo.point;
 
-import com.sidooo.ai.IDKeyword;
+import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
 import com.sidooo.point.Link;
 import com.sidooo.point.Network;
@@ -60,7 +60,7 @@ public class PointService {
 		
 		String itemId = itemRepo.saveItem(item);
 		
-		IDKeyword[] keywords = recog.search(item.getContent());
+		Keyword[] keywords = recog.search(item.getContent());
 		if (keywords.length <= 0) {
 			return itemId;
 		}
@@ -70,26 +70,26 @@ public class PointService {
 			point = new Point();
 			point.setDocId(itemId);
 			point.setTitle(item.getTitle());
-			for(IDKeyword keyword : keywords) {
-				point.addLink(keyword.word);
+			for(Keyword keyword : keywords) {
+				point.addLink(keyword);
 			}
 			pointRepo.createPoint(point);
 		} else {
 			point.setTitle(item.getTitle());
 			point.removeLinks();
-			for(IDKeyword keyword : keywords) {
-				point.addLink(keyword.word);
+			for(Keyword keyword : keywords) {
+				point.addLink(keyword);
 			}
 			pointRepo.updatePoint(point);
 		}
 		
-		for(IDKeyword keyword : keywords) {
+		for(Keyword keyword : keywords) {
 			
-			Link link = linkRepo.getLink(keyword.word);
+			Link link = linkRepo.getLink(keyword.getWord());
 			if (link == null) {
 				link = new Link();
-				link.setKeyword(keyword.word);
-				link.setType(keyword.attr);
+				link.setKeyword(keyword.getWord());
+				link.setType(keyword.getAttr());
 				link.addPoint(itemId);
 				linkRepo.createLink(link);
 			} else {
@@ -130,9 +130,9 @@ public class PointService {
     		
     		Point[] points = network.getPoints();
     		for(Point point : points) {
-    			String[] linkIdList = point.getLinks();
-    			for(String linkId : linkIdList) {
-    				Link link = linkRepo.getLink(linkId);
+    			Keyword[] linkIdList = point.getLinks();
+    			for(Keyword linkId : linkIdList) {
+    				Link link = linkRepo.getLink(linkId.getWord());
     				if (link != null) {
     					network.addLink(link);
     				}

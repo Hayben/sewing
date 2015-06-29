@@ -11,6 +11,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
+import com.sidooo.ai.Keyword;
 import com.sidooo.senode.DatawareConfiguration;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -36,8 +37,8 @@ public class TestPointRepository {
 		Point point = new Point();
 		point.setDocId("fef3451c");
 		point.setTitle("工商注册记录");
-		point.addLink("13914385123");
-		point.addLink("张时安");
+		point.addLink(new Keyword("13914385123", "mobile"));
+		point.addLink(new Keyword("张时安", "nr"));
 		return point;
 	}
 	
@@ -59,7 +60,7 @@ public class TestPointRepository {
 		pointRepo.createPoint(mock);
 		
 		mock.setTitle("行政处罚记录");
-		mock.addLink("32858159383221");
+		mock.addLink(new Keyword("32858159383221", "ssn"));
 		pointRepo.updatePoint(mock);
 		
 		Point point = pointRepo.getPoint(mock.getDocId());

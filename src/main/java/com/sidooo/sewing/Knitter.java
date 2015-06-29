@@ -16,6 +16,7 @@ import org.apache.hadoop.util.ToolRunner;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
+import com.sidooo.ai.Keyword;
 import com.sidooo.point.Link;
 import com.sidooo.point.Point;
 import com.sidooo.senode.DatawareConfiguration;
@@ -24,38 +25,41 @@ import com.sidooo.senode.DatawareConfiguration;
 public class Knitter extends SewingConfigured implements Tool {
 
 	public static class LinkMapper extends SewingMapReduce implements
-			Mapper<Text, Point, Text, Text> {
+			Mapper<Text, Point, Keyword, Text> {
 
 		@Override
 		public void map(Text pointId, Point point,
-				OutputCollector<Text, Text> output, Reporter reporter)
+				OutputCollector<Keyword, Text> output, Reporter reporter)
 				throws IOException {
 
-			String[] links = point.getLinks();
-			for (String link : links) {
-				output.collect(new Text(link), pointId);
+			Keyword[] links = point.getLinks();
+			for (Keyword link : links) {
+				LOG.info("Keyword:" + link.getWord());
+				output.collect(link, pointId);
 			}
 		}
 
 	}
 
 	public static class LinkReducer extends SewingMapReduce implements
-			Reducer<Text, Text, Text, Link> {
+			Reducer<Keyword, Text, Text, Link> {
 
 		@Override
-		public void reduce(Text keyword, Iterator<Text> pointList,
+		public void reduce(Keyword keyword, Iterator<Text> pointList,
 				OutputCollector<Text, Link> output, Reporter reporter)
 				throws IOException {
 
+			
 			Link link = new Link();
-			link.setKeyword(keyword.toString());
-			link.setType("");
+			link.setKeyword(keyword.getWord());
+			link.setType(keyword.getAttr());
 			while (pointList.hasNext()) {
 				Text pointId = pointList.next();
 				link.addPoint(pointId.toString());
 			}
 
-			output.collect(keyword, link);
+			LOG.info("Keyword:"+keyword.getWord() + ", Count:" + link.getPointList().length);
+			output.collect(new Text(keyword.getWord()), link);
 		}
 
 	}
@@ -71,7 +75,7 @@ public class Knitter extends SewingConfigured implements Tool {
 		submitLinkOutput(job);
 
 		job.setMapperClass(LinkMapper.class);
-		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputKeyClass(Keyword.class);
 		job.setMapOutputValueClass(Text.class);
 		job.setReducerClass(LinkReducer.class);
 		job.setOutputKeyClass(Text.class);
