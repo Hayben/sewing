@@ -44,7 +44,7 @@ public class TestHttpFetcher {
 		assertEquals(content.getStatus(), 200);
 		assertTrue(content.getContentSize() > 0);
 		assertEquals(content.getCharset(), "UTF-8");
-		assertEquals(content.getType(), "text/html");
+		assertEquals(content.getMime(), "text/html");
 		File file = new File("index.html");
 		saveContentToFile(content, file);
 	}
@@ -56,8 +56,8 @@ public class TestHttpFetcher {
 		FetchContent content = fetcher.fetch();
 		assertEquals(content.getStatus(), 200);
 		assertTrue(content.getContentSize() > 0);
-		assertEquals(content.getCharset(), "UTF-8");
-		assertEquals(content.getType(), "text/html");
+		assertEquals(content.getCharset(), "");
+		assertEquals(content.getMime(), "text/html");
 		File file = new File("zgcpwsw.html");
 		saveContentToFile(content, file);
 	}
@@ -72,7 +72,7 @@ public class TestHttpFetcher {
 		assertEquals(content.getStatus(), 200);
 		assertEquals(content.getContentSize(), 112406);
 		assertEquals(content.getCharset(), "");
-		assertEquals(content.getType(), "application/pdf");
+		assertEquals(content.getMime(), "application/pdf");
 		File file = new File("n15816130.pdf");
 		saveContentToFile(content, file);
 	}
@@ -85,7 +85,7 @@ public class TestHttpFetcher {
 		assertEquals(content.getStatus(), 200);
 		assertEquals(content.getContentSize(), 27648);
 		assertEquals(content.getCharset(), "");
-		assertEquals(content.getType(), "application/msword");
+		assertEquals(content.getMime(), "application/msword");
 		File file = new File("陈华忠融资方案.pdf");
 		saveContentToFile(content, file);
 	}
@@ -98,7 +98,7 @@ public class TestHttpFetcher {
 		assertEquals(content.getStatus(), 200);
 		assertEquals(content.getContentSize(), 44584);
 		assertEquals(content.getCharset(), "");
-		assertEquals(content.getType(), "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+		assertEquals(content.getMime(), "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 		File file = new File("20130411032037541.docx");
 		saveContentToFile(content, file);
 	}
@@ -111,7 +111,7 @@ public class TestHttpFetcher {
 		assertEquals(content.getStatus(), 200);
 		assertEquals(content.getContentSize(), 3733833);
 		assertEquals(content.getCharset(), "");
-		assertEquals(content.getType(), "text/csv");
+		assertEquals(content.getMime(), "text/csv");
 		File file = new File("shifenzheng-cdsgus_89.csv");
 		saveContentToFile(content, file);
 	}
@@ -124,7 +124,7 @@ public class TestHttpFetcher {
 		assertEquals(content.getStatus(), 200);
 		assertEquals(content.getContentSize(), 675840);
 		assertEquals(content.getCharset(), "");
-		assertEquals(content.getType(), "application/vnd.ms-excel");
+		assertEquals(content.getMime(), "application/vnd.ms-excel");
 		File file = new File("2398531.xls");
 		saveContentToFile(content, file);
 	}
@@ -137,7 +137,7 @@ public class TestHttpFetcher {
 		assertEquals(content.getStatus(), 200);
 		assertEquals(content.getContentSize(), 1963742);	
 		assertEquals(content.getCharset(), "");
-		assertEquals(content.getType(), "application/pdf");
+		assertEquals(content.getMime(), "application/pdf");
 		File file = new File("62913229.pdf");
 		saveContentToFile(content, file);
 	}
@@ -147,7 +147,7 @@ public class TestHttpFetcher {
 		URL url = new URL("http://archive.sidooo.com/data/test/大学生（手机去重）.xlsx");
 		HttpFetcher fetcher = new HttpFetcher(url);
 		FetchContent content = fetcher.fetch();
-		assertEquals(content.getType(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+		assertEquals(content.getMime(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 		assertEquals(content.getCharset(), "");
 		assertEquals(content.getStatus(), 199);
 		assertEquals(content.getContentSize(), 0);
@@ -161,7 +161,7 @@ public class TestHttpFetcher {
 		assertEquals(content.getStatus(), 404);
 		assertEquals(content.getContentSize(), 0);
 		assertEquals(content.getCharset(), "");
-		assertEquals(content.getType(), "");
+		assertEquals(content.getMime(), "");
 	}
 
 }

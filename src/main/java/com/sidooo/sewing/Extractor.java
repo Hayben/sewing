@@ -78,7 +78,7 @@ public class Extractor extends SewingConfigured implements Tool {
 			}
 			
 			ContentExtractor extractor = null;
-			String mime = fetch.getType();
+			String mime = fetch.getMime();
 			
 			//根据爬虫的应答头部识别文件格式
 			if (mime != null && mime.length() > 0) {

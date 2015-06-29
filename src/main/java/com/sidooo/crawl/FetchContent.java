@@ -9,10 +9,31 @@ import org.apache.hadoop.io.Writable;
 public class FetchContent implements Writable {
 
 	private long   timestamp = System.currentTimeMillis();
+	
+	//采集时服务器范围的Http Response Code
 	private int	   status = 0;
-	private String type = "";
+	
+	//mime
+	private String mime = "";
+	
+	//内容编码集
 	private String charset = "";
+	
 	private boolean chunked = false;
+	
+	//网页的最后更新日期
+	private long  date = 0;   
+	
+	//采集数据所使用的网站帐号
+	private String username = "";	
+	
+	//采集数据所使用的网站密码
+	private String password = "";
+	
+	//有些网站帐号需要提供额外的信息
+	private String key = "";
+		
+	//数据大小
 	private long   size = 0;
 	private byte[] content = null;
 
@@ -28,16 +49,16 @@ public class FetchContent implements Writable {
 		return status;
 	}
 	
-	public void setType(String type) {
+	public void setMime(String type) {
 		if (type == null) {
-			this.type = "";
+			this.mime = "";
 		} else {
-			this.type = type;
+			this.mime = type;
 		}
 	}
 	
-	public String getType() {
-		return this.type;
+	public String getMime() {
+		return this.mime;
 	}
 	
 	public void setCharset(String charset) {
@@ -83,9 +104,13 @@ public class FetchContent implements Writable {
 	public void readFields(DataInput in) throws IOException {
 		this.timestamp = in.readLong();
 		this.status = in.readInt();
-		this.type = in.readUTF();
+		this.mime = in.readUTF();
 		this.charset = in.readUTF();
 		this.chunked = in.readBoolean();
+		this.date = in.readLong();
+		this.username = in.readUTF();
+		this.password = in.readUTF();
+		this.key = in.readUTF();
 		this.size = in.readLong();
 		if (this.size > 0) {
 			this.content = new byte[(int)this.size];
@@ -97,9 +122,13 @@ public class FetchContent implements Writable {
 	public void write(DataOutput out) throws IOException {
 		out.writeLong(timestamp);
 		out.writeInt(status);
-		out.writeUTF(this.type);
+		out.writeUTF(this.mime);
 		out.writeUTF(this.charset);
 		out.writeBoolean(this.chunked);
+		out.writeLong(this.date);
+		out.writeUTF(this.username);
+		out.writeUTF(this.password);
+		out.writeUTF(this.key);
 		out.writeLong(this.size);
 		if (this.size > 0) {
 			out.write(this.content);

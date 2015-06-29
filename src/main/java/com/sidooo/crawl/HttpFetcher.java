@@ -58,7 +58,7 @@ public class HttpFetcher extends Fetcher{
             	return content;
             }
             
-            content.setType(EntityUtils.getContentMimeType(entity));
+            content.setMime(EntityUtils.getContentMimeType(entity));
             content.setCharset(EntityUtils.getContentCharSet(entity));
             content.setChunked(entity.isChunked());
 

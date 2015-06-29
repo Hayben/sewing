@@ -83,6 +83,7 @@ public class Crawl extends SewingConfigured implements Tool,
 		job.setMapRunnerClass(Crawl.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(FetchContent.class);
+		job.setNumMapTasks(15);
 		//job.setReducerClass(TestReducer.class);
 		job.setNumReduceTasks(0);
 		

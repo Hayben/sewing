@@ -92,9 +92,9 @@ public class Generator extends SewingConfigured implements Tool {
 					+ value.getCharset());
 			if (value.getStatus() == 200) {
 
-				if (value.getType().length() > 0) {
+				if (value.getMime().length() > 0) {
 					// ContentType存在Response Header中
-					if (value.getType().equalsIgnoreCase("text/html")) {
+					if (value.getMime().equalsIgnoreCase("text/html")) {
 						String charset = value.getCharset();
 						if (charset.length() <= 0) {
 							charset = "utf-8";
