@@ -29,7 +29,8 @@ public class TestXlsxExtractor {
 	public void test() throws FileNotFoundException {
 		File file = new File("src/test/resources/信贷客户资料.xlsx");
 		InputStream stream = new FileInputStream(file);
-		XlsxExtractor extractor = new XlsxExtractor(file.getPath());
+		XlsxExtractor extractor = new XlsxExtractor();
+		extractor.setUrl(file.getPath());
 		int count = 0;
 		do {
 			extractor.extract(stream);

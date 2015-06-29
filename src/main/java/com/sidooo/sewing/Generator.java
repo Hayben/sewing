@@ -75,7 +75,8 @@ public class Generator extends SewingConfigured implements Tool {
 
 		private String[] getLinks(String url, String charset, byte[] content) {
 			ByteArrayInputStream input = new ByteArrayInputStream(content);
-			HtmlExtractor extractor = new HtmlExtractor(url);
+			HtmlExtractor extractor = new HtmlExtractor();
+			extractor.setUrl(url);
 			extractor.extractLink(input, charset);
 			String[] links = extractor.getLinks();
 			return links;

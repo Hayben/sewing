@@ -29,7 +29,8 @@ public class TestCsvExtractor {
 	public void test() throws FileNotFoundException {
 		File file = new File("src/test/resources/7k7k.csv");
 		InputStream stream = new FileInputStream(file);
-		CsvExtractor extractor = new CsvExtractor(file.getPath());
+		CsvExtractor extractor = new CsvExtractor();
+		extractor.setUrl(file.getPath());
 		int count = 0;
 		do {
 			extractor.extract(stream);

@@ -71,11 +71,17 @@ public class WebController {
 		return seeds;
 	}
 
-	// @RequestMapping(value = "/seed/create", method = RequestMethod.POST)
-	// public @ResponseBody Seed createSeed(@RequestParam String seed) {
-	// seedService.createSeed(seed);
-	// return seed;
-	// }
+	 @RequestMapping(value = "/seed/create")
+	 public @ResponseBody Seed createSeed(@RequestParam String seed) {
+		 try {
+			 seed = URLDecoder.decode(seed, "utf-8");
+		 } catch (Exception e) {
+			 e.printStackTrace();
+		 }
+		 Gson gson = new Gson();
+		 Seed newSeed = gson.fromJson(seed, Seed.class);
+		 return seedService.createSeed(newSeed);
+	 }
 
 	@RequestMapping(value = "/seed/update")
 	public @ResponseBody Seed updateSeed(@RequestParam String seed) {

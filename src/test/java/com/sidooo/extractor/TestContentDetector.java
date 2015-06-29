@@ -52,7 +52,19 @@ public class TestContentDetector {
 		stream.read(content);
 		ContentType type = detector.detect(content);
 		assertEquals(type.mime, "application/pdf");
-		assertEquals(type.charset, "");
+		assertEquals(type.charset, null);
+	}
+	
+	@Test
+	public void testCsv() throws Exception {
+		File file = new File("src/test/resources/7k7k.csv");
+		//File file = new File("src/test/resources/httpdir.html");
+		FileInputStream stream = new FileInputStream(file);
+		byte[] content = new byte[1*1024*1024];
+		stream.read(content);
+		ContentType type = detector.detect(content);
+		assertEquals(type.mime, "text/plain");
+		assertEquals(type.charset, "utf-8");
 	}
 
 }

@@ -20,9 +20,6 @@ import org.xml.sax.SAXException;
 
 public class HtmlExtractor extends ContentExtractor {
 	
-	public HtmlExtractor(String path) {
-		super(path);
-	}
 
 	@Override
 	public void extract(InputStream stream) {

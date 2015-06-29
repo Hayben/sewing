@@ -29,7 +29,8 @@ public class TestHtmlExtractor {
 	public void test() throws FileNotFoundException {
 		File file = new File("src/test/resources/进口葡萄酒抢占中国市场.html");
 		InputStream stream = new FileInputStream(file);
-		HtmlExtractor extractor = new HtmlExtractor(file.getPath());
+		HtmlExtractor extractor = new HtmlExtractor();
+		extractor.setUrl(file.getPath());
 		extractor.extract(stream);
 		List<Item> items = extractor.getItems();
 		assertEquals(1, items.size());
@@ -41,7 +42,8 @@ public class TestHtmlExtractor {
 	public void testExtractLinks() throws Exception {
 		File file = new File("src/test/resources/httpdir.html");
 		InputStream stream = new FileInputStream(file);
-		HtmlExtractor extractor = new HtmlExtractor(file.toURL().toString());
+		HtmlExtractor extractor = new HtmlExtractor();
+		extractor.setUrl(file.toURL().toString());
 		extractor.extractLink(stream, "utf8");
 		String[] links = extractor.getLinks();
 //		for(String link : links) {
@@ -54,7 +56,8 @@ public class TestHtmlExtractor {
 	public void TestExtractLinksGb2312() throws Exception {
 		File file = new File("src/test/resources/中国裁判文书网.html");
 		InputStream stream = new FileInputStream(file);
-		HtmlExtractor extractor = new HtmlExtractor(file.toURL().toString());
+		HtmlExtractor extractor = new HtmlExtractor();
+		extractor.setUrl(file.toURL().toString());
 		extractor.extractLink(stream, "gb2312");
 		String[] links = extractor.getLinks();
 		for(String link : links) {

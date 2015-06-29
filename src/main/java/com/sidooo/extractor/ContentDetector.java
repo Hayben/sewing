@@ -99,6 +99,9 @@ public class ContentDetector {
         	 ContentType result = new ContentType();
         	 MediaType type = MediaType.parse(attr);
         	 result.charset = type.getParameters().get("charset");
+        	 if (result.charset != null) {
+        		 result.charset = result.charset.toLowerCase();
+        	 }
         	 result.mime = type.getBaseType().toString();
         	 return result;
          } else {

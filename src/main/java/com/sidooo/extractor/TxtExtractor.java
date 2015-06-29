@@ -5,14 +5,13 @@ import java.io.InputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
-import org.apache.tika.parser.pdf.PDFParser;
+import org.apache.tika.parser.txt.TXTParser;
 import org.apache.tika.sax.BodyContentHandler;
 
+public class TxtExtractor extends ContentExtractor {
 
-public class PdfExtractor extends ContentExtractor {
-	
 	@Override
-	public void extract(InputStream stream) {
+	public void extract(InputStream input) {
 		clearItems();
 		try {
 			BodyContentHandler handler = new BodyContentHandler();
@@ -20,8 +19,8 @@ public class PdfExtractor extends ContentExtractor {
 			ParseContext pcontext = new ParseContext();
 	
 			// parsing the document using PDF parser
-			PDFParser pdfparser = new PDFParser();
-			pdfparser.parse(stream, handler, metadata, pcontext);
+			TXTParser parser = new TXTParser();
+			parser.parse(input, handler, metadata, pcontext);
 	
 			setTitle(FilenameUtils.getBaseName(path));
 			addItem(handler.toString());
@@ -32,5 +31,5 @@ public class PdfExtractor extends ContentExtractor {
 		}
 		
 	}
-	
+
 }

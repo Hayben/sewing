@@ -29,7 +29,8 @@ public class TestDocExtractor {
 	public void test() throws Exception {
 		File file = new File("src/test/resources/陈华忠融资方案.doc");
 		InputStream stream = new FileInputStream(file);
-		DocExtractor extractor = new DocExtractor(file.getPath());
+		DocExtractor extractor = new DocExtractor();
+		extractor.setUrl(file.getPath());
 		extractor.extract(stream);
 		List<Item> contents = extractor.getItems();
 		assertEquals(1, contents.size());

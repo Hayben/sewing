@@ -29,7 +29,8 @@ public class TestXlsExtractor {
 	public void test1() throws FileNotFoundException {
 		File file = new File("src/test/resources/江苏省无锡市南长区企业老总手机号码通讯名录.xls");
 		InputStream stream = new FileInputStream(file);
-		XlsExtractor extractor = new XlsExtractor(file.getPath());
+		XlsExtractor extractor = new XlsExtractor();
+		extractor.setUrl(file.getPath());
 		int count = 0;
 		do {
 			extractor.extract(stream);
@@ -45,7 +46,8 @@ public class TestXlsExtractor {
 	public void test2() throws Exception {
 		File file = new File("src/test/resources/第四十二批住房保障公示清册.xls");
 		InputStream stream = new FileInputStream(file);
-		XlsExtractor extractor = new XlsExtractor(file.getPath());
+		XlsExtractor extractor = new XlsExtractor();
+		extractor.setUrl(file.getPath());
 		int count = 0;
 		do {
 			extractor.extract(stream);

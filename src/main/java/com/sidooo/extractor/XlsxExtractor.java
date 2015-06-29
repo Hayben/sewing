@@ -10,10 +10,6 @@ import org.apache.tika.sax.BodyContentHandler;
 
 public class XlsxExtractor extends ContentExtractor{
 	
-	public XlsxExtractor(String path) {
-		super(path);
-	}
-	
 	private void parseSheets(String content) {
 		
 		String[] lines = content.split("\n");

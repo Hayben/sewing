@@ -10,9 +10,6 @@ import org.apache.tika.sax.BodyContentHandler;
 
 public class XlsExtractor extends ContentExtractor{
 
-	public XlsExtractor(String path) {
-		super(path);
-	}
 	
 	private void parseSheets(String content) {
 		

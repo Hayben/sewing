@@ -29,7 +29,8 @@ public class TestDocxExtractor {
 	public void test() throws FileNotFoundException {
 		File file = new File("src/test/resources/P020140829352377824843.docx");
 		InputStream stream = new FileInputStream(file);
-		DocxExtractor extractor = new DocxExtractor(file.getPath());
+		DocxExtractor extractor = new DocxExtractor();
+		extractor.setUrl(file.getPath());
 		extractor.extract(stream);
 		List<Item> contents = extractor.getItems();
 		assertEquals(1, contents.size());

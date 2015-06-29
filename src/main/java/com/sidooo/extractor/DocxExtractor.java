@@ -10,9 +10,6 @@ import org.apache.tika.sax.BodyContentHandler;
 
 public class DocxExtractor extends ContentExtractor{
 
-	public DocxExtractor(String path) {
-		super(path);
-	}
 
 	@Override
 	public void extract(InputStream stream) {

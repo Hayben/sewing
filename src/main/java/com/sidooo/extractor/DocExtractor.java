@@ -9,10 +9,6 @@ import org.apache.tika.parser.microsoft.OfficeParser;
 import org.apache.tika.sax.BodyContentHandler;
 
 public class DocExtractor extends ContentExtractor{
-	
-	public DocExtractor(String path) {
-		super(path);
-	}
 
 	@Override
 	public void extract(InputStream stream) {

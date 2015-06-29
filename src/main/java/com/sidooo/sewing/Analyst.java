@@ -48,14 +48,21 @@ public class Analyst extends SewingConfigured implements Tool {
 
 		@Override
 		public void map(Text key, Item item,
-				OutputCollector<Text, Point> output, Reporter reporter)
-				throws IOException {
+				OutputCollector<Text, Point> output, Reporter reporter) 
+						throws IOException {
 			String content = item.getContent();
 			if (content == null || content.length() <= MIN_CONTENT_LEN) {
 				return;
 			}
 			
-			Keyword[] keywords = recognition.search(item.getContent());
+			Keyword[] keywords = null;
+			try {
+				keywords = recognition.search(item.getContent());
+			} catch(Exception e) {
+				LOG.error("Recognite Fail.", e);
+				return;
+			}
+			
 			if (keywords == null || keywords.length <= 0) {
 				return;
 			}

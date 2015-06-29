@@ -1,6 +1,7 @@
 package com.sidooo.extractor;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
@@ -11,45 +12,31 @@ public class CsvExtractor extends ContentExtractor{
 	private final int LINE_LIMIT = 1000;
 	
 	private String headerLine;
-	BufferedReader reader = null;
-	
-	public CsvExtractor(String path) {
-		super(path);
-	}
 	
 	@Override
 	public void extract(InputStream stream) {
 		clearItems();
 		setTitle(FilenameUtils.getBaseName(path));
+		
+		BufferedReader reader = null;
 		try {
-			if (reader == null) {
-				reader = new BufferedReader(new InputStreamReader(stream));
-				headerLine = reader.readLine();
-			}
+			reader = new BufferedReader(new InputStreamReader(stream));
+			//headerLine = reader.readLine();
 
-			int lineCount = 0;
-			while (lineCount <= LINE_LIMIT) {
-				
-				String line = reader.readLine();
-				if (line == null) {
-					
-					finish();
-					
-					try {
-						reader.close();
-						reader = null;
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-					break;
-				}
-				
-				lineCount ++ ;
-				
+			String line = null;
+			while ((line = reader.readLine()) != null) {
 				addItem(line);
 			}
 		} catch (Exception e) {
-			finish();
+			e.printStackTrace();
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 
 	}

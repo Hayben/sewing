@@ -28,7 +28,12 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.stereotype.Service;
 
 import com.sidooo.crawl.FetchContent;
+import com.sidooo.extractor.ContentDetector;
 import com.sidooo.extractor.ContentExtractor;
+import com.sidooo.extractor.ContentType;
+import com.sidooo.extractor.HtmlExtractor;
+import com.sidooo.extractor.PdfExtractor;
+import com.sidooo.extractor.XlsExtractor;
 import com.sidooo.point.Item;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
@@ -71,17 +76,42 @@ public class Extractor extends SewingConfigured implements Tool {
 			if (content == null || content.length < 8) {
 				return;
 			}
-
-			ContentExtractor extractor = ContentExtractor.getInstance(url);
-			if (extractor != null) {
-				ByteArrayInputStream input = new ByteArrayInputStream(content);
-				extractor.extract(input);
-				List<Item> items = extractor.getItems();
-				for (Item item : items) {
-					item.setTitle(seed.getName());
-					output.collect(new Text(item.getId()), item);
-				}
+			
+			ContentExtractor extractor = null;
+			String mime = fetch.getType();
+			
+			//根据爬虫的应答头部识别文件格式
+			if (mime != null && mime.length() > 0) {
+				extractor = ContentExtractor.getInstanceByMime(mime);	
+			} 
+			
+			//根据后缀名识别出文件格式
+			if (extractor == null) {
+				extractor = ContentExtractor.getInstanceByUrl(url);
 			}
+			
+			//根据内容识别文件格式
+			if (extractor == null) {
+				extractor = ContentExtractor.getInstanceByContent(content);
+			}
+			
+			if (extractor == null) {
+				LOG.warn("Unknown File Format, Url: "+url + ", Content Size:" + content.length);
+				return;
+			}
+			
+
+			extractor.setUrl(url);
+			ByteArrayInputStream input = new ByteArrayInputStream(content);
+			extractor.extract(input);
+			List<Item> items = extractor.getItems();
+			LOG.info("Url:" + url + ", Extractor:" + extractor.getClass().getName() + ", Item Count:" + items.size());
+			for (Item item : items) {
+				item.setTitle(seed.getName());
+				output.collect(new Text(item.getId()), item);
+			}
+			
+			
 		}
 	}
 

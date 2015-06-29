@@ -29,7 +29,8 @@ public class TestPdfExtractor {
 	public void test() throws FileNotFoundException {
 		File file = new File("src/test/resources/W020150106598588191582.pdf");
 		InputStream stream = new FileInputStream(file);
-		PdfExtractor extractor = new PdfExtractor(file.getPath());
+		PdfExtractor extractor = new PdfExtractor();
+		extractor.setUrl(file.getPath());
 		extractor.extract(stream);
 		List<Item> contents = extractor.getItems();
 		assertEquals(1, contents.size());
