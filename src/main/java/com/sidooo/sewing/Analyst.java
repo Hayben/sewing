@@ -47,6 +47,7 @@ public class Analyst extends SewingConfigured implements Tool {
 						throws IOException {
 			String content = item.getContent();
 			if (content == null || content.length() <= MIN_CONTENT_LEN) {
+				LOG.warn("Content NULL, Url: " + key.toString() );
 				return;
 			}
 			

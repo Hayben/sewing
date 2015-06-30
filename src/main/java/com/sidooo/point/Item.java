@@ -20,8 +20,11 @@ public class Item implements Writable{
 	@Field("title")
 	private String title;
 	
+	@Field("size")
+	private long size = 0;
+	
 	@Field("content")
-	private String content;
+	private byte[] content;
 
 	@Field("origin")
 	private String originUrl;
@@ -30,8 +33,12 @@ public class Item implements Writable{
 	public void write(DataOutput out) throws IOException {
 		out.writeUTF(id);
 		out.writeUTF(title);
-		out.writeUTF(content);
 		out.writeUTF(originUrl);
+		out.writeLong(this.size);
+		if (this.size > 0) {
+			out.write(content);
+		}
+		
 	}
 	
 	public static Item read(DataInput in) throws IOException {
@@ -44,8 +51,12 @@ public class Item implements Writable{
 	public void readFields(DataInput in) throws IOException {
 		this.id = in.readUTF();
 		this.title = in.readUTF();
-		this.content = in.readUTF();
 		this.originUrl = in.readUTF();
+		this.size = in.readLong();
+		if (this.size > 0) {
+			this.content = new byte[(int)this.size];
+			in.readFully(this.content);
+		}
 	}
 	
 	public String getId() {
@@ -61,12 +72,17 @@ public class Item implements Writable{
 	}
 	
 	public void setContent(String content) {
-		this.content = content;
+		this.content = content.getBytes();
+		this.size = content.length();
 		this.id = md5(content);
 	}
 	
 	public String getContent() {
-		return this.content;
+		if (this.content != null) {
+			return new String(this.content);
+		} else {
+			return null;
+		}
 	}
 	
 	public void setUrl(String url) {
