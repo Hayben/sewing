@@ -6,7 +6,7 @@ import java.util.List;
 
 public class UrlStatus {
 	
-	private final long PERIOD = 10 * 24 * 60 * 1000;
+	private final long PERIOD = 10 * 24 * 60 * 60 * 1000;
 	private final int  RETRY_LIMIT = 15;
 	
 	List<FetchStatus> status;

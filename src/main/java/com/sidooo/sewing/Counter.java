@@ -19,17 +19,17 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.stereotype.Service;
 
 import com.sidooo.crawl.FetchContent;
 import com.sidooo.crawl.FetchStatus;
 import com.sidooo.crawl.UrlStatus;
-import com.sidooo.point.Point;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.seed.Statistics;
 import com.sidooo.senode.DatawareConfiguration;
-import com.sidooo.sewing.Analyst.PointMapper;
 
+@Service("counter")
 public class Counter extends SewingConfigured implements Tool{
 	
 	@Autowired
@@ -69,17 +69,22 @@ public class Counter extends SewingConfigured implements Tool{
 			UrlStatus status = new UrlStatus(values);
 			
 			if (status.hasSucceed()) {
+				LOG.info("URL:" + key.toString() + ", SUCCESS");
 				output.collect(key, SUCCESS);
 				if (status.hasExpired()) {
+					LOG.info("URL:" + key.toString() + ", UPDATE");
 					output.collect(key, UPDATE);
 				}
 			} else {
 				if (status.hasSizeLimit()) {
+					LOG.info("URL:" + key.toString() + ", LIMIT");
 					output.collect(key, LIMIT);
 				} else {
 					if (status.hasRetryLimit()) {
+						LOG.info("URL:" + key.toString() + ", FAIL");
 						output.collect(key, FAIL);
 					} else {
+						LOG.info("URL:" + key.toString() + ", WAIT");
 						output.collect(key, WAIT);
 					}
 				}
@@ -108,6 +113,7 @@ public class Counter extends SewingConfigured implements Tool{
 				return;
 			}
 			
+			LOG.info("URL: " + url + ", Seed: " + seed.getId());
 			output.collect(new Text(seed.getId()), value);
 		}
 		
@@ -140,15 +146,15 @@ public class Counter extends SewingConfigured implements Tool{
 				
 				LongWritable value = values.next();
 				
-				if (value == SUCCESS) {
+				if (value.get() == SUCCESS.get()) {
 					stat.success ++;
-				} else if (value == FAIL) {
+				} else if (value.get() == FAIL.get()) {
 					stat.fail ++;
-				} else if (value == WAIT) {
+				} else if (value.get() == WAIT.get()) {
 					stat.wait ++;
-				} else if (value == UPDATE) {
+				} else if (value.get() == UPDATE.get()) {
 					stat.update ++;
-				} else if (value == LIMIT) {
+				} else if (value.get() == LIMIT.get()) {
 					stat.limit ++;
 				} else {
 					
@@ -187,6 +193,8 @@ public class Counter extends SewingConfigured implements Tool{
 
 		job.setJobName("Sewing Counter 2");
 		
+		List<Seed> seeds = seedService.getSeeds();
+		submitSeedCache(job, seeds);
 		submitCountInput(job);
 
 		submitNullOutput(job);

@@ -209,8 +209,8 @@ public class SewingConfigured extends Configured {
 		FileSystem hdfs = FileSystem.get(job);
 
 		Path countFile = new Path("/sewing/count.sequence");
-		if(hdfs.exists(countFile)) {
-			hdfs.delete(countFile);
+		if(!hdfs.exists(countFile)) {
+			throw new Exception("Count File not found.");
 		}
 		
 		FileInputFormat.addInputPath(job, countFile);
@@ -223,8 +223,8 @@ public class SewingConfigured extends Configured {
 		FileSystem hdfs = FileSystem.get(job);
 
 		Path countFile = new Path("/sewing/count.sequence");
-		if (!hdfs.exists(countFile)) {
-			throw new Exception("Count File not found.");
+		if (hdfs.exists(countFile)) {
+			hdfs.delete(countFile);
 		}
 
 		FileOutputFormat.setOutputPath(job, countFile);
@@ -429,7 +429,7 @@ public class SewingConfigured extends Configured {
 		job.setOutputFormat(NullOutputFormat.class);
 		job.setOutputKeyClass(NullWritable.class);
 		job.setOutputValueClass(NullWritable.class);
-		job.setNumReduceTasks(0);
+
 		
 	}
 
