@@ -10,14 +10,6 @@ then
 	exit 1
 fi
 
-echo "Run Analyst Task ..."
-hadoop jar sewing-$VERSION.jar com.sidooo.sewing.Analyst
-if [ $? -ne 0 ]
-then
-	echo "Analyst Task Fail."
-	exit 1
-fi
-
 echo "Run Knitter Task ..."
 hadoop jar sewing-$VERSION.jar com.sidooo.sewing.Knitter
 if [ $? -ne 0 ]

@@ -34,6 +34,9 @@ public class Point implements Writable{
 	@Field("title")
 	private String title;
 	
+	@Field("url")
+	private String url;
+	
 	@Field("links")
 	private Set<Keyword> links;
 	
@@ -57,6 +60,14 @@ public class Point implements Writable{
 	
 	public void setTitle(String title) {
 		this.title = title;
+	}
+	
+	public void setUrl(String url) {
+		this.url = url;
+	}
+	
+	public String getUrl() {
+		return url;
 	}
 	
 	public Keyword[] getLinks() {
@@ -85,6 +96,7 @@ public class Point implements Writable{
 	public void write(DataOutput out) throws IOException {
 		out.writeUTF(this.docId);
 		out.writeUTF(this.title);
+		out.writeUTF(this.url);
 		out.writeInt(this.links.size());
 		for(Keyword link : links) {
 			link.write(out);
@@ -102,6 +114,7 @@ public class Point implements Writable{
 		
 		this.docId = in.readUTF();
 		this.title = in.readUTF();
+		this.url = in.readUTF();
 		this.links.clear();
 		int count = in.readInt();
 		for(int i=0; i<count; i++) {

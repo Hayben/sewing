@@ -2,14 +2,6 @@
 
 VERSION=1.0-SNAPSHOT
 
-echo "Deploy Item ..."
-hadoop jar sewing-$VERSION.jar com.sidooo.sewing.DeployItem
-if [ $? -ne 0 ]
-then
-	echo "Deploy Item Fail."
-	exit 1
-fi
-
 echo "Deploy Point Task ..."
 hadoop jar sewing-$VERSION.jar com.sidooo.sewing.DeployPoint
 if [ $? -ne 0 ]

@@ -85,6 +85,10 @@ public class Item implements Writable{
 		}
 	}
 	
+	public long getContentSize() {
+		return this.size;
+	}
+	
 	public void setUrl(String url) {
 		this.originUrl = url;
 	}

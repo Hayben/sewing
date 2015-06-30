@@ -12,15 +12,19 @@ import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
+import com.sidooo.ai.Keyword;
+import com.sidooo.ai.Recognition;
 import com.sidooo.crawl.FetchContent;
 import com.sidooo.extractor.ContentExtractor;
 import com.sidooo.point.Item;
+import com.sidooo.point.Point;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.senode.DatawareConfiguration;
@@ -32,11 +36,15 @@ public class Extractor extends SewingConfigured implements Tool {
 	private SeedService seedService;
 
 	public static class ExtractMapper extends SewingMapReduce implements
-			Mapper<Text, FetchContent, Text, Item> {
+			Mapper<Text, FetchContent, Text, Point> {
 
+		private final int MIN_CONTENT_LEN = 4;
+		private Recognition recognition ;
+		
 		@Override
 		public void configure(JobConf job) {
 			checkCacheFiles(job);
+			recognition = new Recognition();
 		}
 
 		@Override
@@ -47,7 +55,7 @@ public class Extractor extends SewingConfigured implements Tool {
 
 		@Override
 		public void map(Text key, FetchContent fetch,
-				OutputCollector<Text, Item> output, Reporter reporter)
+				OutputCollector<Text, Point> output, Reporter reporter)
 				throws IOException {
 
 			String url = key.toString();
@@ -84,32 +92,55 @@ public class Extractor extends SewingConfigured implements Tool {
 				return;
 			}
 			
-
 			extractor.setUrl(url);
 			ByteArrayInputStream input = new ByteArrayInputStream(content);
 			extractor.extract(input);
 			List<Item> items = extractor.getItems();
 			LOG.info("Url:" + url + ", Extractor:" + extractor.getClass().getName() + ", Item Count:" + items.size());
 			for (Item item : items) {
-				item.setTitle(seed.getName());
-				output.collect(new Text(item.getId()), item);
+
+				if (item.getContentSize() <= 0) {
+					LOG.warn("Content NULL, Url: " + url );
+					continue;
+				}
+				
+				Keyword[] keywords = null;
+				try {
+					keywords = recognition.search(item.getContent());
+				} catch(Exception e) {
+					LOG.error("Recognite Fail.", e);
+					continue;
+				}
+				
+				if (keywords == null || keywords.length <= 0) {
+					continue;
+				}
+				
+				Point point = new Point();
+				point.setDocId(item.getId());
+				point.setTitle(seed.getName());
+				point.setUrl(url);
+				for (Keyword keyword : keywords) {
+					point.addLink(keyword);
+				}
+				LOG.info("PointId:"+point.getDocId() + ", Keyword Count:" + point.getLinks().length);
+				output.collect(new Text(point.getDocId()), point);
 			}
-			
-			
 		}
 	}
 
 	public static class ExtractReducer extends SewingMapReduce implements
-			Reducer<Text, Item, Text, Item> {
+			Reducer<Text, Point, Text, Point> {
 
 		@Override
-		public void reduce(Text key, Iterator<Item> values,
-				OutputCollector<Text, Item> output, Reporter reporter)
+		public void reduce(Text key, Iterator<Point> values,
+				OutputCollector<Text, Point> output, Reporter reporter)
 				throws IOException {
 
 			if (values.hasNext()) {
-				Item item = values.next();
-				output.collect(key, item);
+				Point point = values.next();
+				output.collect(key, point);
+				reporter.incrCounter("Sewing", "Point", 1);
 			}
 		}
 
@@ -124,22 +155,25 @@ public class Extractor extends SewingConfigured implements Tool {
 		// 设置缓存
 		List<Seed> seeds = seedService.getEnabledSeeds();
 		submitSeedCache(job, seeds);
+		submitNlpCache(job);
 
 		// 设置输入
 		submitCrawlInput(job);
 
 		// 设置输出
-		submitItemOutput(job);
+		submitPointOutput(job);
 
 		// 设置计算流程
 		job.setMapperClass(ExtractMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(Item.class);
+		job.setMapOutputValueClass(Point.class);
 		job.setReducerClass(ExtractReducer.class);
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Item.class);
+		job.setOutputValueClass(Point.class);
 
-		JobClient.runJob(job);
+		RunningJob result = JobClient.runJob(job);
+		long pointCount = result.getCounters().getGroup("Sewing").getCounter("Point");
+		System.out.println("Point Count: " + pointCount);
 		return 0;
 	}
 
