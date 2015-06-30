@@ -5,35 +5,21 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
-import org.apache.tika.Tika;
-import org.apache.tika.detect.Detector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
 import com.sidooo.crawl.FetchContent;
-import com.sidooo.extractor.ContentDetector;
 import com.sidooo.extractor.ContentExtractor;
-import com.sidooo.extractor.ContentType;
-import com.sidooo.extractor.HtmlExtractor;
-import com.sidooo.extractor.PdfExtractor;
-import com.sidooo.extractor.XlsExtractor;
 import com.sidooo.point.Item;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
@@ -47,8 +33,6 @@ public class Extractor extends SewingConfigured implements Tool {
 
 	public static class ExtractMapper extends SewingMapReduce implements
 			Mapper<Text, FetchContent, Text, Item> {
-
-		private Tika tika = new Tika();
 
 		@Override
 		public void configure(JobConf job) {
@@ -123,7 +107,6 @@ public class Extractor extends SewingConfigured implements Tool {
 				OutputCollector<Text, Item> output, Reporter reporter)
 				throws IOException {
 
-			String url = key.toString();
 			if (values.hasNext()) {
 				Item item = values.next();
 				output.collect(key, item);

@@ -1,33 +1,20 @@
 package com.sidooo.sewing;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.URI;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.Counters;
-import org.apache.hadoop.mapred.Counters.Counter;
-import org.apache.hadoop.mapred.Counters.Group;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,13 +23,13 @@ import org.springframework.stereotype.Service;
 
 import com.sidooo.crawl.FetchContent;
 import com.sidooo.crawl.FetchStatus;
+import com.sidooo.crawl.UrlStatus;
 import com.sidooo.extractor.ContentDetector;
 import com.sidooo.extractor.ContentType;
 import com.sidooo.extractor.HtmlExtractor;
 import com.sidooo.queue.QueueRepository;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
-import com.sidooo.seed.Statistics;
 import com.sidooo.senode.DatawareConfiguration;
 
 @Service("generator")
@@ -148,8 +135,6 @@ public class Generator extends SewingConfigured implements Tool {
 
 	public static class GenerateReducer extends SewingMapReduce implements
 			Reducer<Text, FetchStatus, Text, NullWritable> {
-
-		private long PERIOD = 10 * 24 * 60 * 1000;
 		
 		@Override
 		public void configure(JobConf conf) {
@@ -167,52 +152,24 @@ public class Generator extends SewingConfigured implements Tool {
 			}
 			
 			String url = key.toString();
+			
+			UrlStatus status = new UrlStatus(values);
 
-			boolean needFetch = true;
-
-			int retries = 0;
-			while (values.hasNext()) {
-
-				FetchStatus status = values.next();
-				if (status.getStatus() == 200) {
-					// 获取成功， 判断时间间隔
-					Counter counter = reporter.getCounter(seed.getId(), SUCCESS);
-					counter.increment(1);
-					if ((System.currentTimeMillis() - status.getFetchTime()) < PERIOD) {
-						needFetch = false;
-						break;
-					}
-				} else if (status.getStatus() == 199) {
-					// 文件大小超过限制
-					needFetch = false;
-					
-					Counter counter = reporter.getCounter(seed.getId(), FAIL);
-					counter.increment(1);
-					
-					break;
-				} else if (status.getStatus() == 0) {
-					// 种子地址
-
-				} else if (status.getStatus() == 1) {
-					// 解析出来的URL
-
-				} else {
-					retries++;
-				}
-			}
-
-			if (needFetch) {
-				
-				if (retries < 15) {
-					Counter counter = reporter.getCounter(seed.getId(), WAIT);
-					counter.increment(1);
-					
-					LOG.info("Add Url: " + key.toString());
+			if (status.hasSucceed()) {
+				if (status.hasExpired()) {
+					LOG.info("Add Url: " + url);
 					output.collect(key, NullWritable.get());
-
+				}
+			} else {
+				if (status.hasSizeLimit()) {
+					//文件太大， 放弃
 				} else {
-					Counter counter = reporter.getCounter(seed.getId(), FAIL);
-					counter.increment(1);
+					if (status.hasRetryLimit()) {
+						//重试次数已经到达阀值， 放弃
+					} else {
+						LOG.info("Add Url: " + url);
+						output.collect(key, NullWritable.get());
+					}
 				}
 			}
 
@@ -251,20 +208,8 @@ public class Generator extends SewingConfigured implements Tool {
 		job.setReducerClass(GenerateReducer.class);
 		job.setNumReduceTasks(1);
 
-		RunningJob result = JobClient.runJob(job);
+		JobClient.runJob(job);
 		LOG.info("Output Size:" + getFileSize(urlFile));
-		
-		Counters counters = result.getCounters();
-		for(Seed seed : seeds) {
-			Group group = counters.getGroup(seed.getId());
-			
-			Statistics stat = new Statistics();
-			stat.success = group.getCounter(SUCCESS);
-			stat.fail = group.getCounter(FAIL);
-			stat.wait = group.getCounter(WAIT);
-			
-			seedService.updateStatistics(seed.getId(), stat);
-		}
 		
 		//
 		// FSDataInputStream hadoopStream = fs.open(outPath);

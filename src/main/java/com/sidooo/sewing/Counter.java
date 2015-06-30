@@ -22,9 +22,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 
 import com.sidooo.crawl.FetchContent;
 import com.sidooo.crawl.FetchStatus;
-import com.sidooo.extractor.ContentDetector;
-import com.sidooo.extractor.ContentType;
-import com.sidooo.point.ItemRepository;
+import com.sidooo.crawl.UrlStatus;
 import com.sidooo.point.Point;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
@@ -51,7 +49,6 @@ public class Counter extends SewingConfigured implements Tool{
 				OutputCollector<Text, FetchStatus> output, Reporter reporter)
 				throws IOException {
 			
-			URL url = new URL(key.toString());
 			FetchStatus status = new FetchStatus();
 			status.setStatus(value.getStatus());
 			status.setFetchTime(value.getTimeStamp());
@@ -63,85 +60,24 @@ public class Counter extends SewingConfigured implements Tool{
 	
 	public static class CalcUrlResultReducer extends SewingMapReduce implements
 		Reducer<Text, FetchStatus, Text, LongWritable> {
-		
-		private long PERIOD = 10 * 24 * 60 * 1000;
-
-		private List<FetchStatus> toList(Iterator<FetchStatus> it)  {
-			List<FetchStatus> status = new ArrayList<FetchStatus>();
-			while(it.hasNext()) {
-				status.add(it.next());
-			}
-			
-			return status;
-		}
-		
-		private boolean hasSizeLimit(List<FetchStatus> status) {
-			for(FetchStatus it : status) {
-				if (it.getStatus() == 199) {
-					return true;
-				}
-			}
-			
-			return false;
-		}
-		
-		private boolean hasRetryLimit(List<FetchStatus> status) {
-			int count = 0;
-			for(FetchStatus it : status) {
-				int response = it.getStatus();
-				if (response != 200 &&
-						response != 0 &&
-						response != 1 &&
-						response != 199 ) {
-					count ++;
-				}
-			}
-			
-			return count >= 15;
-		}
-		
-		private boolean hasExpired(List<FetchStatus> status) {
-			for(FetchStatus it : status) {
-				
-				if (it.getStatus() == 200 &&
-					(System.currentTimeMillis() - it.getFetchTime()) < PERIOD) {
-					return true;
-				}
-			}
-			
-			return true;
-		}
-		
-		private boolean hasSucceed(List<FetchStatus> status) {
-			
-			for (FetchStatus it : status) {
-				if (it.getStatus() == 200) {
-					return true;
-				}
-			}
-			
-			return false;
-		}
-		
 
 		@Override
 		public void reduce(Text key, Iterator<FetchStatus> values,
 				OutputCollector<Text, LongWritable> output, Reporter reporter)
 				throws IOException {
 			
-
-			List<FetchStatus> status = toList(values);
+			UrlStatus status = new UrlStatus(values);
 			
-			if (hasSucceed(status)) {
+			if (status.hasSucceed()) {
 				output.collect(key, SUCCESS);
-				if (hasExpired(status)) {
+				if (status.hasExpired()) {
 					output.collect(key, UPDATE);
 				}
 			} else {
-				if (hasSizeLimit(status)) {
+				if (status.hasSizeLimit()) {
 					output.collect(key, LIMIT);
 				} else {
-					if (hasRetryLimit(status)) {
+					if (status.hasRetryLimit()) {
 						output.collect(key, FAIL);
 					} else {
 						output.collect(key, WAIT);
@@ -155,7 +91,6 @@ public class Counter extends SewingConfigured implements Tool{
 	//将URL按照种子设置分类
 	public static class ClassifyUrlMapper extends SewingMapReduce implements
 		Mapper<Text, LongWritable, Text, LongWritable> {
-
 		
 		@Override
 		public void configure(JobConf conf) {
@@ -225,10 +160,7 @@ public class Counter extends SewingConfigured implements Tool{
 		}
 		
 	}
-	
-	
-	
-	
+
 	@Override
 	public int run(String[] args) throws Exception {
 		

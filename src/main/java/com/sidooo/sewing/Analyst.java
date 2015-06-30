@@ -1,17 +1,13 @@
 package com.sidooo.sewing;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobClient;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -22,7 +18,6 @@ import org.springframework.stereotype.Service;
 import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
 import com.sidooo.point.Item;
-import com.sidooo.point.Link;
 import com.sidooo.point.Point;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;

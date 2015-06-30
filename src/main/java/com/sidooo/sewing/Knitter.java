@@ -2,7 +2,6 @@ package com.sidooo.sewing;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobClient;
