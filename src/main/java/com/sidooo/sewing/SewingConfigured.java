@@ -204,6 +204,37 @@ public class SewingConfigured extends Configured {
 		DistributedCache.addCacheArchive(remoteNlpFile.toUri(), job);
 		LOG.info("Add Cache File: " + remoteNlpFile.toString());
 	}
+	
+	protected void submitCountInput(JobConf job) throws Exception {
+		FileSystem hdfs = FileSystem.get(job);
+
+		Path countFile = new Path("/sewing/count.sequence");
+		if(hdfs.exists(countFile)) {
+			hdfs.delete(countFile);
+		}
+		
+		FileInputFormat.addInputPath(job, countFile);
+		job.setInputFormat(SequenceFileInputFormat.class);
+		
+		LOG.info("Submit Count Input File:" + countFile.toString());
+	}
+	
+	protected void submitCountOutput(JobConf job) throws Exception {
+		FileSystem hdfs = FileSystem.get(job);
+
+		Path countFile = new Path("/sewing/count.sequence");
+		if (!hdfs.exists(countFile)) {
+			throw new Exception("Count File not found.");
+		}
+
+		FileOutputFormat.setOutputPath(job, countFile);
+		job.setOutputFormat(SequenceFileOutputFormat.class);
+		
+		SequenceFileOutputFormat.setCompressOutput(job, true);
+        SequenceFileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+        SequenceFileOutputFormat.setOutputCompressionType(job, CompressionType.RECORD);
+	}
+	
 
 	protected void submitUrlInput(JobConf job) throws Exception {
 

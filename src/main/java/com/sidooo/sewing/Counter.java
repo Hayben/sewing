@@ -108,7 +108,7 @@ public class Counter extends SewingConfigured implements Tool{
 				return;
 			}
 			
-			output.collect(key, value);
+			output.collect(new Text(seed.getId()), value);
 		}
 		
 		
@@ -155,33 +155,59 @@ public class Counter extends SewingConfigured implements Tool{
 				}
 			}
 			
+			LOG.info(seedId+" Statistics: " + stat.toString());
 			seedService.updateStatistics(seedId, stat);
 			
 		}
+		
+	}
+	
+	private void listUrl() throws Exception {
+		JobConf job = new JobConf(getConf(), Counter.class);
+
+		job.setJobName("Sewing Counter 1");
+		
+		submitCrawlInput(job);
+
+		submitCountOutput(job);
+
+		job.setMapperClass(ReadFetchStatusMapper.class);
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(FetchStatus.class);
+		job.setReducerClass(CalcUrlResultReducer.class);
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(LongWritable.class);
+		job.setNumReduceTasks(5);
+
+		JobClient.runJob(job);
+	}
+	
+	private void countUrl() throws Exception {
+		JobConf job = new JobConf(getConf(), Counter.class);
+
+		job.setJobName("Sewing Counter 2");
+		
+		submitCountInput(job);
+
+		submitNullOutput(job);
+
+		job.setMapperClass(ClassifyUrlMapper.class);
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(LongWritable.class);
+		job.setReducerClass(CountReducer.class);
+		job.setNumReduceTasks(2);
+
+		JobClient.runJob(job);
 		
 	}
 
 	@Override
 	public int run(String[] args) throws Exception {
 		
-		JobConf job = new JobConf(getConf(), Counter.class);
+		listUrl();
+		
+		countUrl();
 
-		job.setJobName("Sewing Counter");
-
-		List<Seed> seeds = seedService.getSeeds();
-		submitSeedCache(job, seeds);
-		submitNlpCache(job);
-
-		submitItemInput(job);
-
-		submitPointOutput(job);
-
-		job.setMapperClass(PointMapper.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Point.class);
-		job.setNumReduceTasks(0);
-
-		JobClient.runJob(job);
 		return 0;
 	}
 	

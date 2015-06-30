@@ -64,6 +64,7 @@ public class DeployItem extends SewingConfigured implements Tool{
 		job.setMapperClass(DeployItemMapper.class);
 		job.setMapOutputKeyClass(NullWritable.class);
 		job.setMapOutputValueClass(NullWritable.class);
+		job.setNumReduceTasks(0);
 
 		JobClient.runJob(job);
 
