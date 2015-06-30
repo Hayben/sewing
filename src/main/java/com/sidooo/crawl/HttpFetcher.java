@@ -12,6 +12,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.util.EntityUtils;
 
 public class HttpFetcher extends Fetcher{
@@ -34,7 +36,13 @@ public class HttpFetcher extends Fetcher{
 		http.addHeader("Accept", "text/html,application/xhtml+xml,application/xml,application/pdf;q=0.9,*/*;q=0.8");  
 		http.addHeader("Connection", "Keep-Alive");  
 		http.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0");  
-		http.addHeader("Cookie", "");  
+		http.addHeader("Cookie", "");
+		
+		//设置连接超时
+		client.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 40000);
+		
+		//设置读取数据超时
+		client.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 90000);
 		
         HttpResponse response = null;
         try {
