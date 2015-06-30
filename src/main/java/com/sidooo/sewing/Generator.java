@@ -1,7 +1,5 @@
 package com.sidooo.sewing;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,7 +57,6 @@ public class Generator extends SewingConfigured implements Tool {
 	public static final String SUCCESS = "success";
 	public static final String FAIL = "fail";
 	public static final String WAIT = "wait";
-
 
 	public Generator() {
 
@@ -152,7 +149,7 @@ public class Generator extends SewingConfigured implements Tool {
 	public static class GenerateReducer extends SewingMapReduce implements
 			Reducer<Text, FetchStatus, Text, NullWritable> {
 
-		private long PERIOD = 7 * 24 * 60 * 1000;
+		private long PERIOD = 10 * 24 * 60 * 1000;
 		
 		@Override
 		public void configure(JobConf conf) {
@@ -268,6 +265,7 @@ public class Generator extends SewingConfigured implements Tool {
 			
 			seedService.updateStatistics(seed.getId(), stat);
 		}
+		
 		//
 		// FSDataInputStream hadoopStream = fs.open(outPath);
 		//
