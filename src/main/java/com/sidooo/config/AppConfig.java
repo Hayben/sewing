@@ -9,13 +9,13 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
 import com.sidooo.senode.DatawareConfiguration;
+import com.sidooo.senode.MongoConfiguration;
 
 
 @Configuration
 @EnableWebMvc
-@ComponentScan({"com.sidooo.*"})
-
-@Import({ DatawareConfiguration.class })
+//@ComponentScan({"com.sidooo.*"})
+@Import({ MongoConfiguration.class })
 public class AppConfig {
 
     @Bean
@@ -27,6 +27,15 @@ public class AppConfig {
         return viewResolver;
     }
     
+//    @Bean
+//    public InternalResourceViewResolver viewResolver() {
+//        InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
+//        viewResolver.setViewClass();
+//        viewResolver.setPrefix("/WEB-INF/pages/");
+//        viewResolver.setSuffix(".jsp");
+//        return viewResolver;
+//    }
+//    
 //	@Bean
 //	public SessionFactory mongodbFactory() {
 //		

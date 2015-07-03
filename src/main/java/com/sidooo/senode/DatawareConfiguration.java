@@ -169,12 +169,6 @@ public class DatawareConfiguration {
 		return template;
 	}
 
-	// @Bean
-	// public PlatformTransactionManager transactionManager() throws
-	// SQLException {
-	// return new DataSourceTransactionManager(dataSource());
-	// }
-
 	@Bean
 	public RedisConnectionFactory redisConnectionFactory() {
 		JedisConnectionFactory redis = new JedisConnectionFactory();

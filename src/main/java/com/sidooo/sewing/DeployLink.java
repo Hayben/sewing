@@ -69,6 +69,7 @@ public class DeployLink extends SewingConfigured implements Tool{
 		job.setMapperClass(DeployLinkMapper.class);
 		job.setMapOutputKeyClass(NullWritable.class);
 		job.setMapOutputValueClass(NullWritable.class);
+		job.setNumReduceTasks(0);
 
 		JobClient.runJob(job);
 		return 0;

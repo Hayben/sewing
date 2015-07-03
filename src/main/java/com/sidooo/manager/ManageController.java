@@ -1,35 +1,30 @@
-package com.sidooo.sewing;
+package com.sidooo.manager;
+
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
 
 import com.google.gson.Gson;
 import com.sidooo.ai.Attribute;
 import com.sidooo.ai.Recognition;
 import com.sidooo.division.DivisionService;
-import com.sidooo.point.Item;
-import com.sidooo.point.Network;
 import com.sidooo.point.NetworkStatus;
 import com.sidooo.point.Pagination;
 import com.sidooo.point.PointService;
-import com.sidooo.queue.QueueRepository;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.ModelAndView;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Created with IntelliJ IDEA. User: kimzhang Date: 15-1-9 Time: 下午4:49 To
- * change this template use File | Settings | File Templates.
- */
+import com.sidooo.sewing.TestResult;
 
 @Controller
-public class WebController {
+public class ManageController {
 
 	@Autowired
 	private SeedService seedService;
@@ -313,22 +308,6 @@ public class WebController {
 		return pointService.getStatus();
 	}
 
-	@RequestMapping(value = "/search", method = RequestMethod.GET)
-	public @ResponseBody Network search(@RequestParam String key,
-			@RequestParam int depth) throws Exception {
-		Network network = pointService.search(key, depth);
-		if (network != null) {
-			System.out.println("Point:" + network.getPoints().length + ",Link:"
-					+ network.getLinks().length);	
-		}
-		return network;
-	}
-	
-	@RequestMapping(value="/item/query", method=RequestMethod.GET)
-	public @ResponseBody Item getItem(@RequestParam String id) {
-		return pointService.getItem(id);
-	}
-	
 	//
 	// // private final EntityService entityService;
 	// //
@@ -716,5 +695,4 @@ public class WebController {
 	// writer.print(s);
 	// }
 	// }
-
 }
