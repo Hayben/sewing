@@ -20,7 +20,7 @@ import org.springframework.web.context.WebApplicationContext;
 import com.sidooo.config.AppConfig;
 import com.sidooo.config.core.SpringMvcInitializer;
 import com.sidooo.seed.Seed;
-import com.sidooo.sewing.WebController;
+import com.sidooo.search.SearchController;
 
 //@RunWith(SpringJUnit4ClassRunner.class)
 //@ContextConfiguration(classes=AppConfig.class, loader=AnnotationConfigContextLoader.class)

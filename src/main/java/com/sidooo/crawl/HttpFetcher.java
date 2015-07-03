@@ -39,7 +39,7 @@ public class HttpFetcher extends Fetcher{
 		http.addHeader("Cookie", "");
 		
 		//设置连接超时
-		client.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 40000);
+		client.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 25000);
 		
 		//设置读取数据超时
 		client.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 90000);

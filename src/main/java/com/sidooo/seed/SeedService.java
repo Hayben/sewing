@@ -59,6 +59,25 @@ public class SeedService {
 		seedRepo.updateSeed(id, seed);
 		return seed.getEnabled();
 	}
+	
+	public Seed getSeedByUrl(String url) {
+		List<Seed> seeds = seedRepo.getEnabledSeeds();
+		for (Seed seed : seeds) {
+			if (url.contains(seed.getUrl())) {
+				return seed;
+			}
+		}
+		return null;
+	}
+	
+	public static Seed getSeedByUrl(String url, List<Seed> seeds) {
+		for (Seed seed : seeds) {
+			if (url.contains(seed.getUrl())) {
+				return seed;
+			}
+		}
+		return null;
+	}
 
 
 }
