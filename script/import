@@ -1,0 +1,25 @@
+#!/bin/bash
+
+tar zxvf wmouth.tar.gz
+if [ $? -ne 0 ] 
+then 
+	echo "Decompress Wmouth Fail."
+	exit 1
+fi
+
+mongoimport -d wmouth -c point -i wmouth/point.dat
+if [ $? -ne 0 ] 
+then 
+	echo "Import Point Fail."
+	exit 1
+fi
+
+mongoimport -d wmouth -c link -i wmouth/link.dat
+if [ $? -ne 0 ] 
+then 
+	echo "Import Point Fail."
+	exit 1
+fi
+
+echo "Import Wmouth Finished."
+exit 0

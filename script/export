@@ -1,0 +1,28 @@
+#!/bin/bash
+
+mkdir wmouth
+
+mongoexport -d wmouth -c point -o wmouth/point.dat
+if [ $? -ne 0 ] 
+then 
+	echo "Compress Point Fail."
+	exit 1
+fi
+
+mongoexport -d wmouth -c link -o wmouth/link.dat
+if [ $? -ne 0 ] 
+then 
+	echo "Export Link Fail."
+	exit 1
+fi
+	
+tar zcvf wmouth
+if [ $? -ne 0 ] 
+then 
+	echo "Compress Wmouth Fail."
+	exit 1
+fi
+
+echo "Export Wmouth finished."
+exit 0
+
