@@ -2,9 +2,11 @@ package com.sidooo.sewing;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -118,6 +120,51 @@ public class TaskData {
 		return count;
 	}
 	
+	public static Path[] submitCrawlInput(Job job, String date) throws Exception {
+		FileSystem hdfs = FileSystem.get(job.getConfiguration());
+
+		Path crawlDir = new Path("/sewing/crawl");
+		if (!hdfs.exists(crawlDir)) {
+			throw new IOException("Crawl Directory not found.");
+		}
+		if (!hdfs.isDirectory(crawlDir)) {
+			throw new Exception("HDFS /sewing/crawl is not directory.");
+		}
+		
+		List<Path> crawlFiles = new ArrayList<Path>();
+		FileStatus[] status = hdfs.listStatus(crawlDir);
+		for (int i = 0; i < status.length; i++) {
+			Path file = status[i].getPath();
+			if (file.getName().endsWith(".sequence") && file.getName().startsWith(date)) {
+				String baseName = FilenameUtils.getBaseName(file.toString());
+				if (baseName.length() == 12) {
+					if (hdfs.exists(new Path(file.toString() + "/_SUCCESS"))) {
+						LOG.info("Submit Crawl Input File: " + file.getName());
+						FileInputFormat.addInputPath(job, file);
+						crawlFiles.add(file);
+					}
+				}
+			}
+		}
+
+		job.setInputFormatClass(SequenceFileInputFormat.class);
+		return crawlFiles.toArray(new Path[crawlFiles.size()]);
+	}
+	
+	public static void deleteCrawlFile(Job job, Path crawlFile) throws Exception {
+		FileSystem hdfs = FileSystem.get(job.getConfiguration());
+
+		Path crawlDir = new Path("/sewing/crawl");
+		if (!hdfs.exists(crawlDir)) {
+			throw new IOException("Crawl Directory not found.");
+		}
+		if (!hdfs.isDirectory(crawlDir)) {
+			throw new Exception("HDFS /sewing/crawl is not directory.");
+		}
+		
+		hdfs.delete(crawlFile);
+	}
+	
 	public static int SubmitThreeCrawlInput(Job job) throws Exception {
 		FileSystem hdfs = FileSystem.get(job.getConfiguration());
 
@@ -145,6 +192,8 @@ public class TaskData {
 		job.setInputFormatClass(SequenceFileInputFormat.class);
 		return count;	
 	}
+	
+
 
 	public static void submitSeedInput(Job job, List<Seed> seeds)
 			throws Exception {
@@ -187,6 +236,32 @@ public class TaskData {
 		String taskId = (new SimpleDateFormat("yyyyMMddHHmm")).format(date);
 		Path taskPath = new Path("/sewing/crawl/" + taskId + ".sequence");
 		LOG.info("Crawl Task Name: " + taskId);
+		FileOutputFormat.setOutputPath(job, taskPath);
+		job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+		SequenceFileOutputFormat.setCompressOutput(job, true);
+		SequenceFileOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+		SequenceFileOutputFormat.setOutputCompressionType(job,
+				CompressionType.RECORD);
+	}
+	
+	public static void submitCrawlOutput(Job job, String date) throws Exception {
+		
+		FileSystem hdfs = FileSystem.get(job.getConfiguration());
+
+		Path crawlDir = new Path("/sewing/crawl");
+		if (!hdfs.exists(crawlDir)) {
+			hdfs.mkdirs(crawlDir);
+		}
+		
+
+
+		// 根据日期创建工作目录
+		LOG.info("Crawl Task Name: " + date);
+		Path taskPath = new Path("/sewing/crawl/" + date + ".sequence");
+		if (hdfs.exists(taskPath)) {
+			throw new IOException("Crawl Output File already exist.");
+		}
 		FileOutputFormat.setOutputPath(job, taskPath);
 		job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
