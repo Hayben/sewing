@@ -27,16 +27,13 @@ import com.sidooo.crawl.UrlStatus;
 import com.sidooo.extractor.ContentDetector;
 import com.sidooo.extractor.ContentType;
 import com.sidooo.extractor.HtmlExtractor;
-import com.sidooo.queue.QueueRepository;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
-import com.sidooo.senode.DatawareConfiguration;
+import com.sidooo.senode.MongoConfiguration;
 
 @Service("generator")
 public class Generator extends SewingConfigured implements Tool {
 
-	@Autowired
-	private QueueRepository queue;
 
 	@Autowired
 	private SeedService seedService;
@@ -206,7 +203,7 @@ public class Generator extends SewingConfigured implements Tool {
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(FetchStatus.class);
 		job.setReducerClass(GenerateReducer.class);
-		job.setNumReduceTasks(1);
+		job.setNumReduceTasks(15);
 
 		JobClient.runJob(job);
 		LOG.info("Output Size:" + getFileSize(urlFile));
@@ -238,8 +235,8 @@ public class Generator extends SewingConfigured implements Tool {
 
 		@SuppressWarnings("resource")
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
-				DatawareConfiguration.class);
-		context.scan("com.sidooo");
+				MongoConfiguration.class);
+		context.scan("com.sidooo.seed", "com.sidooo.sewing");
 		Generator generator = context.getBean("generator", Generator.class);
 
 		// conf.set("hbase.zookeeper.quorum",

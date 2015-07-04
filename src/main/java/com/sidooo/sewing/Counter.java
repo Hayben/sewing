@@ -1,8 +1,6 @@
 package com.sidooo.sewing;
 
 import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -28,6 +26,7 @@ import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.seed.Statistics;
 import com.sidooo.senode.DatawareConfiguration;
+import com.sidooo.senode.MongoConfiguration;
 
 @Service("counter")
 public class Counter extends SewingConfigured implements Tool{
@@ -222,8 +221,8 @@ public class Counter extends SewingConfigured implements Tool{
 	public static void main(String[] args) throws Exception {
 		@SuppressWarnings("resource")
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
-				DatawareConfiguration.class);
-		context.scan("com.sidooo");
+				MongoConfiguration.class);
+		context.scan("com.sidooo.seed", "com.sidooo.sewing");
 		Counter counter = context.getBean("counter", Counter.class);
 
 		int res = ToolRunner.run(SewingConfiguration.create(), counter, args);
