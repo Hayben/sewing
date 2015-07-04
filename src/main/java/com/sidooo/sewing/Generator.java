@@ -203,7 +203,7 @@ public class Generator extends SewingConfigured implements Tool {
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(FetchStatus.class);
 		job.setReducerClass(GenerateReducer.class);
-		job.setNumReduceTasks(15);
+		job.setNumReduceTasks(30);
 
 		JobClient.runJob(job);
 		LOG.info("Output Size:" + getFileSize(urlFile));

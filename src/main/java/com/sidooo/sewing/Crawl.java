@@ -11,6 +11,7 @@ import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.map.MultithreadedMapper;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -26,10 +27,20 @@ import com.sidooo.senode.MongoConfiguration;
 @Service("crawl")
 public class Crawl extends SewingConfigured implements Tool {
 
+	private static final int VCORE_COUNT = 4;
+	
 	public static final Logger LOG = LoggerFactory.getLogger("Crawl");
 
 	public static class CrawlMapper extends
 			Mapper<LongWritable, Text, Text, FetchContent> {
+
+		HttpFetcher fetcher;
+		
+		@Override
+		public void setup(Context context) throws IOException,
+				InterruptedException {
+			fetcher = new HttpFetcher();
+		}
 
 		@Override
 		public void map(LongWritable key, Text value, Context context)
@@ -43,10 +54,9 @@ public class Crawl extends SewingConfigured implements Tool {
 				return;
 			}
 
-			HttpFetcher fetcher = new HttpFetcher(url);
 			FetchContent content = null;
 			try {
-				content = fetcher.fetch();
+				content = fetcher.fetch(url);
 			} catch (Exception e) {
 				LOG.error("Fetch Content Failed.", e);
 				context.getCounter("Sewing", "FAIL").increment(1);
@@ -66,7 +76,7 @@ public class Crawl extends SewingConfigured implements Tool {
 
 	public static class CrawlReducer extends
 			Reducer<Text, FetchContent, Text, FetchContent> {
-		
+
 		@Override
 		public void reduce(Text key, Iterable<FetchContent> values,
 				Context context) throws IOException, InterruptedException {
@@ -85,6 +95,10 @@ public class Crawl extends SewingConfigured implements Tool {
 	@Override
 	public int run(String[] arg0) throws Exception {
 		// 创建分布式爬虫任务
+		Configuration conf = getConf();
+		conf.setInt("mapreduce.map.cpu.vcores", VCORE_COUNT);
+		LOG.info("mapreduce.map.cpu.vcores : " + getConf().getInt("mapreduce.map.cpu.vcores", 1));
+		
 		Job job = new Job(getConf());
 		job.setJobName("Sewing Crawl");
 		job.setJarByClass(Crawl.class);
@@ -98,9 +112,10 @@ public class Crawl extends SewingConfigured implements Tool {
 		// 设置分布式计算流程
 		job.setMapperClass(MultithreadedMapper.class);
 		MultithreadedMapper.setMapperClass(job, CrawlMapper.class);
-		MultithreadedMapper.setNumberOfThreads(job, 8);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(FetchContent.class);
+		MultithreadedMapper.setNumberOfThreads(job, VCORE_COUNT * 3);
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(FetchContent.class);
+		
 		job.setReducerClass(CrawlReducer.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(FetchContent.class);

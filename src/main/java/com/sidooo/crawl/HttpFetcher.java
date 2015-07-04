@@ -24,13 +24,12 @@ public class HttpFetcher extends Fetcher{
     
     private final int BUFFER_SIZE = 32 * 1024;
 	
-	public HttpFetcher(URL url) {
-		super(url);
+	public HttpFetcher() {
 		client = new DefaultHttpClient();
 	}
 
 	@Override
-	public FetchContent fetch() throws Exception {
+	public FetchContent fetch(URL url) throws Exception {
 		
 		HttpGet http = new HttpGet(url.toString());
 		http.addHeader("Accept", "text/html,application/xhtml+xml,application/xml,application/pdf;q=0.9,*/*;q=0.8");  
@@ -39,7 +38,7 @@ public class HttpFetcher extends Fetcher{
 		http.addHeader("Cookie", "");
 		
 		//设置连接超时
-		client.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 25000);
+		client.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 10000);
 		
 		//设置读取数据超时
 		client.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 90000);
@@ -121,8 +120,8 @@ public class HttpFetcher extends Fetcher{
 //            }
 
         } finally {
-
-            
+        	
+        	http.releaseConnection();
                 
         }
 	}

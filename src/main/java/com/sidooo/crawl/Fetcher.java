@@ -10,23 +10,16 @@ import com.sidooo.seed.Account;
 abstract
 public class Fetcher extends Thread{
 	
-	protected URL url;
-	
-	
 	protected String username;
 	
 	protected String password;
-
-	public Fetcher(URL url) {
-		this.url = url;
-	}
 	
 	public void setAccount(String username, String password) {
 		this.username = username;
 		this.password = password;
 	}
 	
-	public abstract FetchContent fetch() throws Exception;
+	public abstract FetchContent fetch(URL url) throws Exception;
 	
 	public static Fetcher getInstance(String urlPath) {
 		
@@ -40,7 +33,7 @@ public class Fetcher extends Thread{
 		
 
 		if ("http".equals(url.getProtocol())) {
-			return new HttpFetcher(url);
+			return new HttpFetcher();
 		} else {
 			return null;
 		}
