@@ -117,6 +117,34 @@ public class TaskData {
 		job.setInputFormatClass(SequenceFileInputFormat.class);
 		return count;
 	}
+	
+	public static int SubmitThreeCrawlInput(Job job) throws Exception {
+		FileSystem hdfs = FileSystem.get(job.getConfiguration());
+
+		Path crawlDir = new Path("/sewing/crawl");
+		if (!hdfs.exists(crawlDir)) {
+			hdfs.mkdirs(crawlDir);
+		}
+		if (!hdfs.isDirectory(crawlDir)) {
+			throw new Exception("HDFS /sewing/crawl is not directory.");
+		}
+		int count = 0;
+		FileStatus[] status = hdfs.listStatus(crawlDir);
+		for (int i = 0; i < 2; i++) {
+			Path file = status[i].getPath();
+			if (file.getName().endsWith(".sequence")) {
+				
+				if (hdfs.exists(new Path(file.toString() + "/_SUCCESS"))) {
+					LOG.info("Submit Crawl Input File: " + file.getName());
+					FileInputFormat.addInputPath(job, file);
+					count++;
+				}
+			}
+		}
+
+		job.setInputFormatClass(SequenceFileInputFormat.class);
+		return count;	
+	}
 
 	public static void submitSeedInput(Job job, List<Seed> seeds)
 			throws Exception {

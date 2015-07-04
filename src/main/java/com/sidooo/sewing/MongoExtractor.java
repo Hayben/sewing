@@ -6,20 +6,12 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalFileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.mapreduce.TableReducer;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
@@ -33,27 +25,30 @@ import com.sidooo.ai.Recognition;
 import com.sidooo.crawl.FetchContent;
 import com.sidooo.extractor.ContentExtractor;
 import com.sidooo.point.Item;
+import com.sidooo.point.Link;
+import com.sidooo.point.LinkRepository;
 import com.sidooo.point.Point;
+import com.sidooo.point.PointRepository;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
-import com.sidooo.senode.DatawareConfiguration;
 import com.sidooo.senode.MongoConfiguration;
 
-@Service("extractor")
-public class Extractor extends SewingConfigured implements Tool {
+@Service("mongoExtractor")
+public class MongoExtractor extends SewingConfigured implements Tool {
 
-	public static final Logger LOG = LoggerFactory.getLogger("Extractor");
+	public static final Logger LOG = LoggerFactory.getLogger("MongoExtractor");
 
 	@Autowired
 	private SeedService seedService;
 
 	public static class ExtractMapper extends
-			Mapper<Text, FetchContent, Text, Point> {
+			Mapper<Text, FetchContent, Keyword, Text> {
 
-		private final int MIN_CONTENT_LEN = 4;
 		private Recognition recognition;
 
 		private List<Seed> seeds;
+
+		private PointRepository pointRepo;
 
 		@Override
 		public void setup(Context context) throws IOException,
@@ -71,6 +66,14 @@ public class Extractor extends SewingConfigured implements Tool {
 				throw new InterruptedException("Hanlp Jar not found.");
 			}
 			recognition = new Recognition();
+
+			@SuppressWarnings("resource")
+			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
+					MongoConfiguration.class);
+			appcontext.scan("com.sidooo.point");
+			pointRepo = appcontext.getBean("pointRepository",
+					PointRepository.class);
+			pointRepo.clear();
 		}
 
 		@Override
@@ -123,7 +126,7 @@ public class Extractor extends SewingConfigured implements Tool {
 			ByteArrayInputStream input = new ByteArrayInputStream(content);
 			try {
 				extractor.extract(input);
-			} catch(Exception e) {
+			} catch (Exception e) {
 				LOG.error("Extract " + url + " Fail.", e);
 				return;
 			}
@@ -147,6 +150,7 @@ public class Extractor extends SewingConfigured implements Tool {
 				}
 
 				if (keywords == null || keywords.length <= 0) {
+					LOG.warn("Keyword not found.");
 					continue;
 				}
 
@@ -156,31 +160,60 @@ public class Extractor extends SewingConfigured implements Tool {
 				point.setUrl(url);
 				for (Keyword keyword : keywords) {
 					point.addLink(keyword);
+					context.write(keyword, new Text(point.getDocId()));
 				}
+
+				pointRepo.createPoint(point);
+
 				LOG.info("PointId:" + point.getDocId() + ", Keyword Count:"
 						+ point.getLinks().length);
-
-				context.write(new Text(point.getDocId()), point);
+				context.getCounter("Sewing", "Point").increment(1);
 			}
-
 		}
 	}
 
 	public static class ExtractReducer extends
-			Reducer<Text, Point, Text, Point> {
+			Reducer<Keyword, Text, NullWritable, NullWritable> {
+
+		private LinkRepository linkRepo;
 
 		@Override
-		protected void reduce(Text key, Iterable<Point> values,
-				Context context) throws IOException, InterruptedException {
-			
-			Iterator<Point> it = values.iterator();
-			if (it.hasNext()) {
-				Point point = it.next();
-				context.write(key, point);
-				context.getCounter("Sewing", "Point").increment(1);
-			}
+		public void setup(Context context) throws IOException,
+				InterruptedException {
+
+			@SuppressWarnings("resource")
+			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
+					MongoConfiguration.class);
+			appcontext.scan("com.sidooo.point");
+			linkRepo = appcontext.getBean("linkRepository",
+					LinkRepository.class);
+			linkRepo.clear();
 		}
 
+		@Override
+		public void cleanup(Context context) throws IOException,
+				InterruptedException {
+
+		}
+
+		@Override
+		protected void reduce(Keyword keyword, Iterable<Text> values,
+				Context context) throws IOException, InterruptedException {
+
+			Link link = new Link();
+			link.setKeyword(keyword.getWord());
+			link.setType(keyword.getAttr());
+
+			Iterator<Text> points = values.iterator();
+			if (points.hasNext()) {
+				Text point = points.next();
+				link.addPoint(point.toString());
+			}
+
+			linkRepo.createLink(link);
+
+			context.getCounter("Sewing", "Link").increment(1);
+		}
 	}
 
 	@Override
@@ -188,7 +221,7 @@ public class Extractor extends SewingConfigured implements Tool {
 
 		Job job = new Job(getConf());
 		job.setJobName("Sewing Extract");
-		job.setJarByClass(Extractor.class);
+		job.setJarByClass(MongoExtractor.class);
 
 		// 设置缓存
 		List<Seed> seeds = seedService.getEnabledSeeds();
@@ -199,38 +232,43 @@ public class Extractor extends SewingConfigured implements Tool {
 		TaskData.submitCrawlInput(job);
 
 		// 设置输出
-		TaskData.submitPointOutput(job);
+		// TaskData.submitPointOutput(job);
 
 		// 设置计算流程
 		job.setMapperClass(ExtractMapper.class);
-		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(Point.class);
+		job.setMapOutputKeyClass(Keyword.class);
+		job.setMapOutputValueClass(Text.class);
+
+
 		job.setReducerClass(ExtractReducer.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Point.class);
+		TaskData.submitNullOutput(job);
+		job.setNumReduceTasks(10);
 
 		boolean success = job.waitForCompletion(true);
 		if (success) {
 			CounterGroup group = job.getCounters().getGroup("Sewing");
-			Counter counter = group.findCounter("Point");
-			long pointCount = counter.getValue();
+			long pointCount = group.findCounter("Point").getValue();
 			System.out.println("Point Count: " + pointCount);
+			long linkCount = group.findCounter("Link").getValue();
+			System.out.println("Link Count: " + linkCount);
 			return 0;
-			
+
 		} else {
 			return 1;
 		}
-		
+
 	}
 
 	public static void main(String args[]) throws Exception {
 
+		@SuppressWarnings("resource")
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
 				MongoConfiguration.class);
 		context.scan("com.sidooo.seed", "com.sidooo.sewing");
-		Extractor Extractor = context.getBean("extractor", Extractor.class);
+		MongoExtractor extractor = context.getBean("mongoExtractor",
+				MongoExtractor.class);
 
-		int res = ToolRunner.run(SewingConfiguration.create(), Extractor, args);
+		int res = ToolRunner.run(SewingConfiguration.create(), extractor, args);
 		System.exit(res);
 	}
 }

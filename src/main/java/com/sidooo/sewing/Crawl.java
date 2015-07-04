@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import com.sidooo.crawl.FetchContent;
 import com.sidooo.crawl.HttpFetcher;
 import com.sidooo.senode.DatawareConfiguration;
+import com.sidooo.senode.MongoConfiguration;
 
 @Service("crawl")
 public class Crawl extends SewingConfigured implements Tool,
@@ -93,9 +94,10 @@ public class Crawl extends SewingConfigured implements Tool,
 
 	public static void main(String args[]) throws Exception {
 
+		@SuppressWarnings("resource")
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
-				DatawareConfiguration.class);
-		context.scan("com.sidooo");
+				MongoConfiguration.class);
+		context.scan("com.sidooo.seed");
 		Crawl crawl = context.getBean("crawl", Crawl.class);
 
 		int res = ToolRunner.run(SewingConfiguration.create(), crawl, args);

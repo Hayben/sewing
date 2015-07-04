@@ -3,8 +3,8 @@ package com.sidooo.ai;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.zip.CRC32;
 
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 
 public class Keyword implements WritableComparable<Keyword>{
@@ -87,5 +87,12 @@ public class Keyword implements WritableComparable<Keyword>{
 			return this.word.compareTo(keyword.getWord());
 		}
 	}
+	
+	public String hash() {
+		CRC32 crc32 = new CRC32();
+		crc32.update(this.word.getBytes());
+		return Long.toHexString(crc32.getValue());
+	}
+	
 	
 }
