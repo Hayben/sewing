@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# chkconfig: 345 94 01
+# description: Sewing Manager Service
+#
+# File: sewing-manager
+# Description: Starts and stops the Sewing Manager Service
+
+source /etc/rc.d/init.d/functions
+
+SEWING_HOME=/raid5/sewing
+SEWING_USER=sewing
+SEWING_VERSION=1.0-SNAPSHOT
+SEWING_CLASS=com.sidooo.manager.ManageService
+JAVA=/usr/java/default/bin/java
+
+case "$1" in
+	start)
+		echo -n "Starting Sewing Manager:"
+		/sbin/runuser $SEWING_USER -c "nohup $JAVA -cp $SEWING_HOME/sewing-$SEWING_VERSION.jar $SEWING_CLASS &"
+		echo " done."
+		exit 0
+		;;
+		
+	stop)
+		echo -n "Stopping Sewing Manager:"
+		/sbin/runuser $SEWING_USER -c "ps -ef | grep $SEWING_CLASS | grep -v grep | awk '{print \$2}' | xargs kill"
+		echo " done."
+		exit 0
+		;;
+		
+	hardstop)
+		echo -n "Stopping (hard) Sewing Manager: "
+		/sbin/runuser $SEWING_USER -c "ps -ef | grep $SEWING_CLASS | grep -v grep | awk '{print \$2}' | xargs kill -9"
+		echo "done."
+		exit 0
+		;;
+	
+	status)
+		c_pid=`ps -ef | grep $SEWING_CLASS | grep -v grep | awk '{print $2}'`
+		if [ "$c_pid" = "" ]; then 
+			echo "Stopped"
+			exit 3
+		else 
+			echo "Running $c_pid"
+			exit 0
+		fi
+		;;
+		
+	restart)
+		echo -n "Stopping Sewing Manager:"
+		/sbin/runuser $SEWING_USER -c "ps -ef | grep $SEWING_CLASS | grep -v grep | awk '{print \$2}' | xargs kill"
+		echo " done."
+		echo -n "Starting Sewing Manager:"
+		/sbin/runuser $SEWING_USER -c "nohup $JAVA -cp $SEWING_HOME/sewing-$SEWING_VERSION.jar $SEWING_CLASS &"
+		echo " done."
+		;;
+	
+	*)
+		echo "Usage: sewing-manager {start|stop|hardstop|status|restart}"
+		exit 1
+		;;
+esac
