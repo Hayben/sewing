@@ -13,6 +13,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import com.sidooo.ai.Keyword;
+
 @Document(collection = "link")
 public class Link implements Writable{
 	
@@ -88,5 +90,14 @@ public class Link implements Writable{
 		}
 	}
 
+	public String toString() {
+		StringBuilder build = new StringBuilder();
+		build.append("Link:"+this.keyword+", Points:");
+		for(String point: points) {
+			build.append(point+",");
+		}
+		
+		return build.toString();
+	}
 	
 }

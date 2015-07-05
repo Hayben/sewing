@@ -53,8 +53,7 @@ public class Counter extends SewingConfigured implements Tool{
 			status.setFetchTime(value.getTimeStamp());
 			output.collect(key, status);
 		}
-		
-		
+
 	}
 	
 	public static class CalcUrlResultReducer extends SewingMapReduce implements
@@ -128,8 +127,8 @@ public class Counter extends SewingConfigured implements Tool{
 		public void configure(JobConf conf) {
 			@SuppressWarnings("resource")
 			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
-					DatawareConfiguration.class);
-			context.scan("com.sidooo");
+					MongoConfiguration.class);
+			context.scan("com.sidooo.seed");
 			seedService = context.getBean("seedService", SeedService.class);
 		}
 		

@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
+import com.sidooo.counter.CountService;
 import com.sidooo.crawl.FetchContent;
 import com.sidooo.extractor.ContentExtractor;
 import com.sidooo.point.Item;
@@ -32,6 +33,7 @@ import com.sidooo.point.PointRepository;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.senode.MongoConfiguration;
+import com.sidooo.senode.RedisConfiguration;
 
 @Service("mongoExtractor")
 public class MongoExtractor extends SewingConfigured implements Tool {
@@ -41,6 +43,9 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 	@Autowired
 	private SeedService seedService;
 
+	@Autowired
+	private CountService countService;
+
 	public static class ExtractMapper extends
 			Mapper<Text, FetchContent, Keyword, Text> {
 
@@ -49,6 +54,8 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 		private List<Seed> seeds;
 
 		private PointRepository pointRepo;
+
+		private CountService countService;
 
 		@Override
 		public void setup(Context context) throws IOException,
@@ -69,10 +76,14 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 
 			@SuppressWarnings("resource")
 			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
-					MongoConfiguration.class);
-			appcontext.scan("com.sidooo.point");
+					MongoConfiguration.class, RedisConfiguration.class);
+			appcontext.scan("com.sidooo.point", "com.sidooo.counter");
 			pointRepo = appcontext.getBean("pointRepository",
 					PointRepository.class);
+
+			countService = appcontext.getBean("countService",
+					CountService.class);
+
 			pointRepo.clear();
 		}
 
@@ -131,13 +142,12 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 				return;
 			}
 			List<Item> items = extractor.getItems();
-			LOG.info("Url:" + url + ", Extractor:"
-					+ extractor.getClass().getName() + ", Item Count:"
+			LOG.info(url + ", Extractor:" + extractor.getClass().getName() + ", Item Count:"
 					+ items.size());
 			for (Item item : items) {
 
 				if (item.getContentSize() <= 0) {
-					LOG.warn("Content NULL, Url: " + url);
+					LOG.warn("Item:" + item.getId() +" Content NULL");
 					continue;
 				}
 
@@ -145,12 +155,12 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 				try {
 					keywords = recognition.search(item.getContent());
 				} catch (Exception e) {
-					LOG.error("Recognite Fail.", e);
+					LOG.error("Item:" + item.getId() +" Recognite Fail.", e);
 					continue;
 				}
 
 				if (keywords == null || keywords.length <= 0) {
-					LOG.warn("Keyword not found.");
+					LOG.warn("Item:" + item.getId() +" Keyword not found.");
 					continue;
 				}
 
@@ -161,12 +171,13 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 				for (Keyword keyword : keywords) {
 					point.addLink(keyword);
 					context.write(keyword, new Text(point.getDocId()));
+					countService.incLinkCount(seed.getId());
 				}
 
 				pointRepo.createPoint(point);
+				countService.incPointCount(seed.getId());
 
-				LOG.info("PointId:" + point.getDocId() + ", Keyword Count:"
-						+ point.getLinks().length);
+				LOG.info(point.toString());
 				context.getCounter("Sewing", "Point").increment(1);
 			}
 		}
@@ -183,10 +194,11 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 
 			@SuppressWarnings("resource")
 			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
-					MongoConfiguration.class);
-			appcontext.scan("com.sidooo.point");
+					MongoConfiguration.class, RedisConfiguration.class);
+			appcontext.scan("com.sidooo.point", "com.sidooo.counter");
 			linkRepo = appcontext.getBean("linkRepository",
 					LinkRepository.class);
+
 			linkRepo.clear();
 		}
 
@@ -212,6 +224,7 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 
 			linkRepo.createLink(link);
 
+			LOG.info(link.toString());
 			context.getCounter("Sewing", "Link").increment(1);
 		}
 	}
@@ -229,7 +242,8 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 		CacheSaver.submitNlpCache(job);
 
 		// 设置输入
-		TaskData.submitCrawlInput(job);
+		//TaskData.submitCrawlInput(job);
+		TaskData.SubmitThreeCrawlInput(job);
 
 		// 设置输出
 		// TaskData.submitPointOutput(job);
@@ -239,10 +253,13 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 		job.setMapOutputKeyClass(Keyword.class);
 		job.setMapOutputValueClass(Text.class);
 
-
 		job.setReducerClass(ExtractReducer.class);
 		TaskData.submitNullOutput(job);
 		job.setNumReduceTasks(10);
+
+		for (Seed seed : seeds) {
+			countService.resetCount(seed.getId());
+		}
 
 		boolean success = job.waitForCompletion(true);
 		if (success) {
@@ -251,8 +268,15 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 			System.out.println("Point Count: " + pointCount);
 			long linkCount = group.findCounter("Link").getValue();
 			System.out.println("Link Count: " + linkCount);
-			return 0;
 
+			for (Seed seed : seeds) {
+				long seedPointCount = countService.getPointCount(seed.getId());
+				long seedLinkCount = countService.getLinkCount(seed.getId());
+
+				seedService.updateAnalysisStatistics(seed.getId(),
+						seedPointCount, seedLinkCount);
+			}
+			return 0;
 		} else {
 			return 1;
 		}
@@ -263,7 +287,7 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 
 		@SuppressWarnings("resource")
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
-				MongoConfiguration.class);
+				MongoConfiguration.class, RedisConfiguration.class);
 		context.scan("com.sidooo.seed", "com.sidooo.sewing");
 		MongoExtractor extractor = context.getBean("mongoExtractor",
 				MongoExtractor.class);

@@ -9,20 +9,22 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
 import com.sidooo.senode.MongoConfiguration;
+import com.sidooo.senode.MysqlConfiguration;
 
 @Configuration
 @EnableWebMvc
-@ComponentScan({"com.sidooo.manager"})
-@Import({ MongoConfiguration.class })
+@ComponentScan({ "com.sidooo.manager", "com.sidooo.division",
+		"com.sidooo.seed", "com.sidooo.point" })
+@Import({ MongoConfiguration.class, MysqlConfiguration.class })
 public class ManageConfiguration {
-	
-    @Bean
-    public InternalResourceViewResolver viewResolver() {
-        InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
-        viewResolver.setViewClass(JstlView.class);
-        viewResolver.setPrefix("/WEB-INF/pages/");
-        viewResolver.setSuffix(".jsp");
-        return viewResolver;
-    }
-    
+
+	@Bean
+	public InternalResourceViewResolver viewResolver() {
+		InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
+		viewResolver.setViewClass(JstlView.class);
+		viewResolver.setPrefix("/WEB-INF/pages/");
+		viewResolver.setSuffix(".jsp");
+		return viewResolver;
+	}
+
 }

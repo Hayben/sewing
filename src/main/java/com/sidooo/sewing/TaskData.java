@@ -177,7 +177,7 @@ public class TaskData {
 		}
 		int count = 0;
 		FileStatus[] status = hdfs.listStatus(crawlDir);
-		for (int i = 0; i < 2; i++) {
+		for (int i = 0; i < 1; i++) {
 			Path file = status[i].getPath();
 			if (file.getName().endsWith(".sequence")) {
 				

@@ -14,11 +14,12 @@ import org.springframework.test.context.support.AnnotationConfigContextLoader;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.sidooo.senode.DatawareConfiguration;
+import com.sidooo.senode.MongoConfiguration;
 
 import junit.framework.TestCase;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes=DatawareConfiguration.class, loader=AnnotationConfigContextLoader.class)
+@ContextConfiguration(classes=MongoConfiguration.class, loader=AnnotationConfigContextLoader.class)
 public class TestSeedRepository extends TestCase {
 
 	@Autowired
@@ -31,7 +32,6 @@ public class TestSeedRepository extends TestCase {
 	
 	@After
 	public void tearDown() throws Exception {
-		
 	}
 	
 	private Seed mockSeed() {
@@ -61,6 +61,7 @@ public class TestSeedRepository extends TestCase {
 	
 	@Test
 	public void testCreateSeed() {
+		assertEquals("test", seedRepo.getDatabaseName());
 		Seed seed = mockSeed();
 		String id = seedRepo.createSeed(seed);
 		assertTrue(id != null);
@@ -68,6 +69,8 @@ public class TestSeedRepository extends TestCase {
 	
 	@Test
 	public void testGetSeed() {
+		assertEquals("test", seedRepo.getDatabaseName());
+		
 		Seed mock = mockSeed();
 		String id = seedRepo.createSeed(mock);
 		
@@ -79,6 +82,7 @@ public class TestSeedRepository extends TestCase {
 	
 	@Test
 	public void testGetSeedList() {
+		assertEquals("test", seedRepo.getDatabaseName());
 		
 		Seed mock1 = mockSeed();
 		seedRepo.createSeed(mock1);
@@ -95,6 +99,8 @@ public class TestSeedRepository extends TestCase {
 	
 	@Test
 	public void testDeleteSeed() {
+		assertEquals("test", seedRepo.getDatabaseName());
+		
 		Seed mock = mockSeed();
 		String id = seedRepo.createSeed(mock);
 		
@@ -106,6 +112,8 @@ public class TestSeedRepository extends TestCase {
 	
 	@Test
 	public void testUpdateSeed() {
+		assertEquals("test", seedRepo.getDatabaseName());
+		
 		Seed mock = mockSeed();
 		String id = seedRepo.createSeed(mock);
 		
@@ -123,6 +131,9 @@ public class TestSeedRepository extends TestCase {
 	
 	@Test
 	public void testGetEnabledSeed() {
+		
+		assertEquals("test", seedRepo.getDatabaseName());
+		
 		Seed mock = mockSeed();
 		String id = seedRepo.createSeed(mock);
 		List<Seed> seeds = seedRepo.getEnabledSeeds();
@@ -131,6 +142,9 @@ public class TestSeedRepository extends TestCase {
 	
 	@Test
 	public void testSeedSerialize() {
+		
+		assertEquals("test", seedRepo.getDatabaseName());
+		
 		Seed mock = mockSeed();
 		seedRepo.createSeed(mock);
 		seedRepo.createSeed(mock);

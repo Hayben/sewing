@@ -13,6 +13,10 @@ public class SeedRepository {
 
 	@Autowired
 	private MongoTemplate mongo;
+	
+	public String getDatabaseName() {
+		return mongo.getDb().getName();
+	}
 
     public List<Seed> getSeedsByDivision(Integer divisionId) {
     	Query query = new Query();

@@ -1,5 +1,6 @@
 package com.sidooo.seed;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +18,15 @@ public class SeedService {
 		return seedRepo.getSeed(id);
 	}
 	
-	public Seed createSeed(Seed seed) {
-		seedRepo.createSeed(seed);
-		return seed;
+	public Seed createSeed(Seed newSeed) throws IllegalArgumentException {
+		List<Seed> seeds = seedRepo.getSeeds();
+		for(Seed seed : seeds) {
+			if (seed.getUrl().equalsIgnoreCase(newSeed.getUrl())) {
+				throw new IllegalArgumentException("Seed already exist");
+			}
+		}
+		seedRepo.createSeed(newSeed);
+		return newSeed;
 	}
 	
 	public void deleteSeed(String id) {
@@ -42,6 +49,16 @@ public class SeedService {
 	public void updateStatistics(String seedId, Statistics stat) {
 		
 		Seed seed = seedRepo.getSeed(seedId);
+		seed.setStatistics(stat);
+		seedRepo.updateSeed(seedId, seed);
+	}
+	
+	public void updateAnalysisStatistics(String seedId, long pointCount, long linkCount) {
+		
+		Seed seed = seedRepo.getSeed(seedId);
+		Statistics stat = seed.getStatistics();
+		stat.point = pointCount;
+		stat.link = linkCount;
 		seed.setStatistics(stat);
 		seedRepo.updateSeed(seedId, seed);
 	}

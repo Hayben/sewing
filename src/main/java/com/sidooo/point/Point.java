@@ -122,5 +122,15 @@ public class Point implements Writable{
 			this.links.add(link);
 		}
 	}
+	
+	public String toString() {
+		StringBuilder build = new StringBuilder();
+		build.append("Point:"+this.docId+", Keyword:");
+		for(Keyword keyword : links) {
+			build.append(keyword.getWord()+",");
+		}
+		
+		return build.toString();
+	}
 
 }

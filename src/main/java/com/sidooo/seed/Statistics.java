@@ -7,6 +7,9 @@ public class Statistics {
 	public long wait = 0;
 	public long update = 0;
 	public long limit = 0;
+	
+	public long point = 0;
+	public long link = 0;
 
 	public String toString() {
 		return "SUCCESS " + success + ", FAIL " + fail + ", WAIT " + wait
