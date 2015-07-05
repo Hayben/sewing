@@ -1,37 +1,73 @@
 #!/bin/bash
 
-PROGRAM="$0"
+usage()
+{
+	echo -e "Usage: `basename $0` -r round [-h]\n";
+	exit 1
+}
 
-# if no args specified, show usage
-if [ $# = 0 ]; then
-	echo "sewing 1.0-SNAPSHOT"
-	echo "Usage: sewing COMMAND"
-	echo "where COMMAND is one of:"
-	echo " webservice 			management service on web"
-	echo " fetch				fetch pages of url list"
-	echo " index				make id network"
+ROUND=0
+
+ARG=`getopt r:h $*`
+
+set --$ARG;
+
+while getopts r:h PARAM_VAL
+do
+	case $PARAM_VAL in
+	r)
+		ROUND=$OPTARG;
+		;;
+	h|help)
+		usage
+		;;
+	*)
+		;;
+	esac
+done
+
+if [ $ROUND -eq 0 ]; then
+	usage
+fi
+
+VERSION=1.0-SNAPSHOT
+
+i=0
+while [ $i -lt $ROUND ];
+do
+	echo "Crawl Round $(($i+1))"
+	
+	echo "Run Generator Task ..."
+	hadoop jar sewing-$VERSION.jar com.sidooo.sewing.Generator
+	if [ $? -ne 0 ] 
+	then 
+		echo "Generator Task Fail."
+		break
+	fi
+	
+	echo "Run Crawl Task ..."
+	hadoop jar sewing-$VERSION.jar com.sidooo.sewing.Crawl
+	if [ $? -ne 0 ]
+	then 
+		echo "Crawl Task Fail."
+		break;
+	fi
+	
+	echo "Run Count Task ..."
+	hadoop jar sewing-$VERSION.jar com.sidooo.sewing.Counter
+	if [ $? -ne 0 ]
+	then 
+		echo "Counter Task Fail."
+		break;
+	fi
+	
+	((i++));
+done
+
+echo "Run MongoExtractor Task ..."
+hadoop jar sewing-$VERSION.jar com.sidooo.sewing.MongoExtractor
+if [ $? -ne 0 ]
+then
+	echo "MongoExtractor Task Fail."
 	exit 1
 fi
-
-# get arguments
-COMMAND=$1
-shift
-
-SEWING_HOME="`dirname $PROGRAM`"
-
-# set log directory & file
-LOG_DIR="$SEWING_HOME/logs"
-LOG_FILE="sewing.log"
-
-if [ "$COMMAND" = "webservice" ]; then
-	CLASS=com.sidooo.webService.WebService
-elif [ "$COMMAND" = "fetch" ]; then
-	CLASS=com.sdiooo.fetcher.Crawl
-elif [ "$COMMAND" = "index" ]; then
-	CLASS=com.sidooo.point.Indexer
-else
-	CLASS=$COMMAND
-fi
-
-exec hadoop cp sewing-1.0-SNAPSHOT.jar $CLASS 
-
