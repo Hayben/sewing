@@ -1,11 +1,14 @@
 package com.sidooo.crawl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -29,7 +32,16 @@ public class HttpFetcher extends Fetcher{
 	}
 
 	@Override
-	public FetchContent fetch(URL url) throws Exception {
+	public FetchContent fetch(String address) {
+		
+		FetchContent content = new FetchContent();
+		URL url;
+		try {
+			url = new URL(address);
+		} catch (MalformedURLException e1) {
+			content.setStatus(190);
+			return content;
+		}
 		
 		HttpGet http = new HttpGet(url.toString());
 		http.addHeader("Accept", "text/html,application/xhtml+xml,application/xml,application/pdf;q=0.9,*/*;q=0.8");  
@@ -46,13 +58,24 @@ public class HttpFetcher extends Fetcher{
         HttpResponse response = null;
         try {
 
-            response = client.execute(http);
+        	
+            try {
+				response = client.execute(http);
+			} catch (ClientProtocolException e) {
+				// 协议错误
+				content.setStatus(197);
+				return content;
+			} catch (IOException e) {
+				//连接错误
+				content.setStatus(198);
+				return content;
+			}
+            
             if (response == null) {
-            	return null;
+            	content.setStatus(196);
+            	return content;
             }
-            
-            FetchContent content = new FetchContent();
-            
+                       
             int retCode = response.getStatusLine().getStatusCode();
             content.setStatus(retCode);
             
@@ -69,7 +92,17 @@ public class HttpFetcher extends Fetcher{
             content.setCharset(EntityUtils.getContentCharSet(entity));
             content.setChunked(entity.isChunked());
 
-            InputStream in = entity.getContent();
+            InputStream in;
+			try {
+				in = entity.getContent();
+			} catch (IllegalStateException e) {
+				content.setStatus(195);
+				return content;
+			} catch (IOException e) {
+				//读取超时， 或者远端关闭
+				content.setStatus(194);
+				return content;
+			}
             byte[] buffer= new byte[BUFFER_SIZE];
             long fileSize = entity.getContentLength();
             if (fileSize > SMALL_FILE_MAX_SIZE) {
@@ -81,13 +114,26 @@ public class HttpFetcher extends Fetcher{
         	ByteArrayOutputStream out = new ByteArrayOutputStream();
             
             int size = 0;
-            while((size = in.read(buffer))!=-1) {
-            	out.write(buffer,0, size);
-            }
+            try {
+				while((size = in.read(buffer))!=-1) {
+					out.write(buffer,0, size);
+				}
+			} catch (IOException e) {
+				// 读取超时
+				content.setStatus(193);
+				return content;
+			}
             
             content.setContent(out.toByteArray(), out.size());
-            out.close();
-            in.close();
+            try {
+				out.close();
+			} catch (IOException e) {
+			}
+            
+            try {
+				in.close();
+			} catch (IOException e) {
+			}
             
             return content;
   

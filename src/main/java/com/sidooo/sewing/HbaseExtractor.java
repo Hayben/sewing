@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -44,9 +45,9 @@ import com.sidooo.senode.MongoConfiguration;
 
 
 @Service("hbaseExtractor")
-public class HbaseExtractor extends SewingConfigured implements Tool {
+public class HbaseExtractor extends Configured implements Tool {
 
-	public static final Logger LOG = LoggerFactory.getLogger("Extractor");
+	public static final Logger LOG = LoggerFactory.getLogger("HbaseExtractor");
 
 	@Autowired
 	private SeedService seedService;
@@ -301,7 +302,7 @@ public class HbaseExtractor extends SewingConfigured implements Tool {
 		CacheSaver.submitNlpCache(job);
 
 		// 设置输入
-		TaskData.SubmitThreeCrawlInput(job);
+		TaskData.SubmitTestCrawlInput(job);
 
 		// 设置输出
 		// TaskData.submitPointOutput(job);

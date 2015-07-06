@@ -18,7 +18,6 @@ import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,8 +172,6 @@ public class CacheSaver {
 			throw new Exception("Upload Nlp File Length mismatch Local File.");
 		}
 
-		URI uriNlpFile = new URI(remoteNlpFile.toUri().toString()
-				+ "#data.tar.gz");
 		DistributedCache.addCacheArchive(remoteNlpFile.toUri(), job.getConfiguration());
 		LOG.info("Add Cache File: " + remoteNlpFile.toString());
 	}

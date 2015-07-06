@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.CounterGroup;
@@ -36,7 +37,7 @@ import com.sidooo.senode.MongoConfiguration;
 import com.sidooo.senode.RedisConfiguration;
 
 @Service("mongoExtractor")
-public class MongoExtractor extends SewingConfigured implements Tool {
+public class MongoExtractor extends Configured implements Tool {
 
 	public static final Logger LOG = LoggerFactory.getLogger("MongoExtractor");
 
@@ -130,6 +131,7 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 			if (extractor == null) {
 				LOG.warn("Unknown File Format, Url: " + url + ", Content Size:"
 						+ content.length);
+				context.getCounter("Sewing", "ERR_NOEXTRACTOR").increment(1);
 				return;
 			}
 
@@ -139,6 +141,7 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 				extractor.extract(input);
 			} catch (Exception e) {
 				LOG.error("Extract " + url + " Fail.", e);
+				context.getCounter("Sewing", "ERR_EXTRACT").increment(1);
 				return;
 			}
 			List<Item> items = extractor.getItems();
@@ -156,11 +159,13 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 					keywords = recognition.search(item.getContent());
 				} catch (Exception e) {
 					LOG.error("Item:" + item.getId() +" Recognite Fail.", e);
+					context.getCounter("Sewing", "ERR_RECOGNITE").increment(1);
 					continue;
 				}
 
 				if (keywords == null || keywords.length <= 0) {
 					LOG.warn("Item:" + item.getId() +" Keyword not found.");
+					context.getCounter("Sewing", "ERR_NOKEYWORD").increment(1);
 					continue;
 				}
 
@@ -242,8 +247,8 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 		CacheSaver.submitNlpCache(job);
 
 		// 设置输入
-		//TaskData.submitCrawlInput(job);
-		TaskData.SubmitThreeCrawlInput(job);
+		TaskData.submitCrawlInput(job);
+		//TaskData.SubmitTestCrawlInput(job);
 
 		// 设置输出
 		// TaskData.submitPointOutput(job);
@@ -268,6 +273,14 @@ public class MongoExtractor extends SewingConfigured implements Tool {
 			System.out.println("Point Count: " + pointCount);
 			long linkCount = group.findCounter("Link").getValue();
 			System.out.println("Link Count: " + linkCount);
+			long errCount = group.findCounter("ERR_NOEXTRACTOR").getValue();
+			System.out.println("ERR_NOEXTRACTOR Count: " + errCount);
+			errCount = group.findCounter("ERR_RECOGNITE").getValue();
+			System.out.println("ERR_RECOGNITE Count: " + errCount);
+			errCount = group.findCounter("ERR_EXTRACT").getValue();
+			System.out.println("ERR_EXTRACT Count: " + errCount);
+			errCount = group.findCounter("ERR_NOKEYWORD").getValue();
+			System.out.println("ERR_NOKEYWORD Count: " + errCount);
 
 			for (Seed seed : seeds) {
 				long seedPointCount = countService.getPointCount(seed.getId());

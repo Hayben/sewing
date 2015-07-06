@@ -19,7 +19,7 @@ public class Fetcher extends Thread{
 		this.password = password;
 	}
 	
-	public abstract FetchContent fetch(URL url) throws Exception;
+	public abstract FetchContent fetch(String url);
 	
 	public static Fetcher getInstance(String urlPath) {
 		

@@ -94,7 +94,7 @@ public class ManageController {
 		return newSeed;
 	}
 
-	@RequestMapping(value = "/seed/delete", method = RequestMethod.DELETE)
+	@RequestMapping(value = "/seed/delete")
 	public void deleteSeed(@RequestParam String id) {
 		seedService.deleteSeed(id);
 	}

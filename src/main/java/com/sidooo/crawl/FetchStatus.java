@@ -9,6 +9,7 @@ import org.apache.hadoop.io.Writable;
 public class FetchStatus implements Writable, Comparable<FetchStatus>{
 	
 	private long   fetchTime = System.currentTimeMillis();
+	private long   fetchSize = 0;
 	private int	   status = 0;
 
 	public long getFetchTime() {
@@ -17,6 +18,14 @@ public class FetchStatus implements Writable, Comparable<FetchStatus>{
 	
 	public void setFetchTime(long fetchTime) {
 		this.fetchTime = fetchTime;
+	}
+	
+	public long getFetchSize() {
+		return this.fetchSize;
+	}
+	
+	public void setFetchSize(long size) {
+		this.fetchSize = size;
 	}
 	
 	public void setStatus(int responseStatus) {
@@ -36,19 +45,21 @@ public class FetchStatus implements Writable, Comparable<FetchStatus>{
 	@Override
 	public void readFields(DataInput in) throws IOException {
 		this.fetchTime = in.readLong();
+		this.fetchSize = in.readLong();
 		this.status = in.readInt();
 	}
 
 	@Override
 	public void write(DataOutput out) throws IOException {
 		out.writeLong(this.fetchTime);
+		out.writeLong(this.fetchSize);
 		out.writeInt(this.status);
 	}
 
 	@Override
 	public int compareTo(FetchStatus target) {
 		long thisTime = this.getFetchTime();
-		long targetTime = this.getFetchTime();
+		long targetTime = target.getFetchTime();
 		if (thisTime < targetTime) {
 			return -1;
 		}

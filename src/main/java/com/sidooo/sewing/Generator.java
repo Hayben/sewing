@@ -3,11 +3,12 @@ package com.sidooo.sewing;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
@@ -15,6 +16,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
@@ -31,8 +34,10 @@ import com.sidooo.seed.SeedService;
 import com.sidooo.senode.MongoConfiguration;
 
 @Service("generator")
-public class Generator extends SewingConfigured implements Tool {
+public class Generator extends Configured implements Tool {
 
+	public static final Logger LOG = LoggerFactory.getLogger("Generator");
+	
 	@Autowired
 	private SeedService seedService;
 
@@ -127,7 +132,7 @@ public class Generator extends SewingConfigured implements Tool {
 	}
 
 	public static class GenerateReducer extends
-			Reducer<Text, FetchStatus, Text, NullWritable> {
+			Reducer<Text, FetchStatus, Text, Text> {
 
 		private List<Seed> seeds;
 
@@ -141,19 +146,27 @@ public class Generator extends SewingConfigured implements Tool {
 				throw new InterruptedException("Seed List is null.");
 			}
 		}
-
+		
 		@Override
 		protected void reduce(Text key, Iterable<FetchStatus> values,
 				Context context) throws IOException, InterruptedException {
+			
+			List<FetchStatus> list = new ArrayList<FetchStatus>();
+			for(FetchStatus fetch : values) {
+				list.add(fetch);
+			}
+			
+			Collections.sort(list);
+			
 			Seed seed = SeedService.getSeedByUrl(key.toString(), seeds);
 			if (seed == null) {
 				return;
 			}
-
+			
 			UrlStatus status = UrlStatus.from(values);
 			if (status == UrlStatus.READY) {
 				context.getCounter("Sewing", "URL").increment(1);
-				context.write(key, NullWritable.get());
+				context.write(key, new Text(seed.getId()));
 			}
 		}
 
@@ -184,21 +197,25 @@ public class Generator extends SewingConfigured implements Tool {
 		LOG.info("Crawl File Count: " + count);
 
 		// 设置输出
-		Path urlFile = TaskData.submitUrlOutput(job);
+		TaskData.submitUrlOutput(job);
 
 		// 设置计算流程
 		job.setMapperClass(GenerateMapper.class);
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(FetchStatus.class);
 		job.setReducerClass(GenerateReducer.class);
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(Text.class);
 		job.setNumReduceTasks(30);
 
 		boolean success = job.waitForCompletion(true);
 		if (success) {
-			LOG.info("Output Size:" + getFileSize(urlFile));
 			CounterGroup group = job.getCounters().getGroup("Sewing");
 			long urlCount = group.findCounter("URL").getValue();
 			System.out.println("URL Count: " + urlCount);
+			return 0;
+		} else {
+			return 1;
 		}
 
 		//
@@ -221,7 +238,6 @@ public class Generator extends SewingConfigured implements Tool {
 		// }
 		// }
 		//
-		return 0;
 	}
 
 	public static void main(String args[]) throws Exception {

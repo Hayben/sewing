@@ -107,8 +107,28 @@ public class Seed {
 		return account;
 	}
 	
-	public void setStatistics(Statistics stat) {
-		this.statistics = stat;
+	public void setSuccessCount(long count) {
+		this.statistics.success = count;
+	}
+	
+	public void setFailCount(long count) {
+		this.statistics.fail = count;
+	}
+	
+	public void setLimitCount(long count) {
+		this.statistics.limit = count;
+	}
+	
+	public void setWaitCount(long count) {
+		this.statistics.wait = count;
+	}
+	
+	public void setPointCount(long count) {
+		this.statistics.point = count;
+	}
+	
+	public void setLinkCount(long count) {
+		this.statistics.link = count;
 	}
 	
 	public Statistics getStatistics() {

@@ -2,6 +2,7 @@ package com.sidooo.sewing;
 
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.CounterGroup;
@@ -10,6 +11,8 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +20,10 @@ import com.sidooo.crawl.FetchContent;
 import com.sidooo.senode.MongoConfiguration;
 
 @Service("merger")
-public class Merger extends SewingConfigured implements Tool {
+public class Merger extends Configured implements Tool {
 
+	public static final Logger LOG = LoggerFactory.getLogger("Merger");
+	
 	public static class MergeMapper extends
 			Mapper<Text, FetchContent, Text, FetchContent> {
 

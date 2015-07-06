@@ -1,19 +1,20 @@
 package com.sidooo.sewing;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Reducer.Context;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
@@ -23,11 +24,12 @@ import com.sidooo.crawl.FetchStatus;
 import com.sidooo.crawl.UrlStatus;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
-import com.sidooo.seed.Statistics;
 import com.sidooo.senode.MongoConfiguration;
 
 @Service("counter")
-public class Counter extends SewingConfigured implements Tool{
+public class Counter extends Configured implements Tool{
+	
+	public static final Logger LOG = LoggerFactory.getLogger("Counter");
 	
 	@Autowired
 	private SeedService seedService;
@@ -131,31 +133,33 @@ public class Counter extends SewingConfigured implements Tool{
 				throws IOException, InterruptedException {
 			
 			String seedId = key.toString();
-			Statistics stat = new Statistics();
 			
+			long successCount = 0;
+			long failCount = 0;
+			long waitCount = 0;
+			long limitCount = 0;
 			for(LongWritable value : values) {
 				
 				if (value.get() == SUCCESS.get()) {
-					stat.success ++;
+					successCount ++;
 				} else if (value.get() == FAIL.get()) {
-					stat.fail ++;
+					failCount ++;
 				} else if (value.get() == WAIT.get()) {
-					stat.wait ++;
+					waitCount ++;
 				} else if (value.get() == LIMIT.get()) {
-					stat.limit ++;
+					limitCount ++;
 				} else {
 					
 				}
 			}
 			
-			LOG.info(seedId+" Statistics: " + stat.toString());
-			seedService.updateStatistics(seedId, stat);
+			seedService.updateFetchStatistics(seedId, successCount, failCount, waitCount, limitCount);
 			
 		}
 		
 	}
 	
-	private void listUrl() throws Exception {
+	private boolean listUrl() throws Exception {
 		Job job = new Job(getConf());
 		job.setJobName("Sewing Counter 1");
 		job.setJarByClass(Counter.class);
@@ -172,10 +176,12 @@ public class Counter extends SewingConfigured implements Tool{
 		job.setOutputValueClass(LongWritable.class);
 		job.setNumReduceTasks(5);
 
-		job.waitForCompletion(true);
+		boolean success = job.waitForCompletion(true);
+		
+		return success;
 	}
 	
-	private void countUrl() throws Exception {
+	private boolean countUrl() throws Exception {
 		Job job = new Job(getConf());
 		job.setJobName("Sewing Counter 2");
 		job.setJarByClass(Counter.class);
@@ -192,18 +198,19 @@ public class Counter extends SewingConfigured implements Tool{
 		job.setReducerClass(CountReducer.class);
 		job.setNumReduceTasks(2);
 
-		job.waitForCompletion(true);
-		
+		return job.waitForCompletion(true);
 	}
 
 	@Override
 	public int run(String[] args) throws Exception {
 		
-		listUrl();
-		
-		countUrl();
+		if (listUrl()) {
+			if (countUrl()) {
+				return 0;
+			}
+		}
 
-		return 0;
+		return 1;
 	}
 	
 	public static void main(String[] args) throws Exception {

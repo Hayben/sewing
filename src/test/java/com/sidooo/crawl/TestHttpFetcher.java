@@ -38,7 +38,7 @@ public class TestHttpFetcher {
 
 	@Test
 	public void testFetchHtml() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/");
+		String url = "http://archive.sidooo.com/data/test/";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 200);
@@ -51,7 +51,7 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetchHtmlWithoutContentType() throws Exception {
-		URL url = new URL("http://www.court.gov.cn/zgcpwsw/");
+		String url = "http://www.court.gov.cn/zgcpwsw/";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 200);
@@ -66,7 +66,7 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetchPdf() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/n15816130.pdf");
+		String url = "http://archive.sidooo.com/data/test/n15816130.pdf";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 200);
@@ -79,7 +79,7 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetchDoc() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/陈华忠融资方案.doc");
+		String url = "http://archive.sidooo.com/data/test/陈华忠融资方案.doc";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 200);
@@ -92,7 +92,7 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetchDocx() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/20130411032037541.docx");
+		String url = "http://archive.sidooo.com/data/test/20130411032037541.docx";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 200);
@@ -105,7 +105,7 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetchCsv() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/shifenzheng-cdsgus_89.csv");
+		String url = "http://archive.sidooo.com/data/test/shifenzheng-cdsgus_89.csv";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 200);
@@ -118,7 +118,7 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetchXls() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/2398531.xls");
+		String url = "http://archive.sidooo.com/data/test/2398531.xls";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 200);
@@ -131,7 +131,7 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetch2M() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/62913229.PDF");
+		String url = "http://archive.sidooo.com/data/test/62913229.PDF";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 200);
@@ -144,7 +144,7 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetch37M() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/大学生（手机去重）.xlsx");
+		String url = "http://archive.sidooo.com/data/test/大学生（手机去重）.xlsx";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getMime(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -155,10 +155,32 @@ public class TestHttpFetcher {
 	
 	@Test
 	public void testFetch404() throws Exception {
-		URL url = new URL("http://archive.sidooo.com/data/test/notexist.html");
+		String url = "http://archive.sidooo.com/data/test/notexist.html";
 		HttpFetcher fetcher = new HttpFetcher();
 		FetchContent content = fetcher.fetch(url);
 		assertEquals(content.getStatus(), 404);
+		assertEquals(content.getContentSize(), 0);
+		assertEquals(content.getCharset(), "");
+		assertEquals(content.getMime(), "");
+	}
+	
+	@Test
+	public void testFetchNotExistHost() throws Exception {
+		String url = "http://notexist.sidooo.com/notexist.html";
+		HttpFetcher fetcher = new HttpFetcher();
+		FetchContent content = fetcher.fetch(url);
+		assertEquals(content.getStatus(), 198);
+		assertEquals(content.getContentSize(), 0);
+		assertEquals(content.getCharset(), "");
+		assertEquals(content.getMime(), "");
+	}
+	
+	@Test
+	public void testFetchNotSupportProcotol() throws Exception {
+		String url = "https://archive.sidooo.com/notexist.html";
+		HttpFetcher fetcher = new HttpFetcher();
+		FetchContent content = fetcher.fetch(url);
+		assertEquals(content.getStatus(), 198);
 		assertEquals(content.getContentSize(), 0);
 		assertEquals(content.getCharset(), "");
 		assertEquals(content.getMime(), "");
