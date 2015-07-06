@@ -8,11 +8,11 @@
 
 source /etc/rc.d/init.d/functions
 
-SEWING_HOME=/raid5/sewing
+SEWING_HOME=/usr/sewing
 SEWING_USER=sewing
 SEWING_VERSION=1.0-SNAPSHOT
 SEWING_CLASS=com.sidooo.manager.ManageService
-JAVA=/usr/java/default/bin/java
+JAVA=/usr/bin/java
 
 case "$1" in
 	start)
