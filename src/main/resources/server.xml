@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE RelativeLayout>
-<root>
-    <server ip="10.1.1.5" port="27017" database="webdb"/>
-</root>

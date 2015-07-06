@@ -32,13 +32,9 @@ public class TestCsvExtractor {
 		CsvExtractor extractor = new CsvExtractor();
 		extractor.setUrl(file.getPath());
 		int count = 0;
-		do {
-			extractor.extract(stream);
-			List<Item> items = extractor.getItems();
-			count += items.size();
-		} while(!extractor.finished());
-		
-		assertEquals(5999, count);
+		extractor.extract(stream);
+		List<Item> items = extractor.getItems();
+		assertEquals(6000, items.size());
 		assertEquals("7k7k", extractor.getTitle());
 	}
 

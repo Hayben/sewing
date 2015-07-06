@@ -1,4 +1,4 @@
-package com.sidooo.fetcher;
+package com.sidooo.crawl;
 
 import static org.junit.Assert.*;
 
@@ -27,7 +27,7 @@ public class TestFilter {
 		assertTrue(filter.accept("http://www.sidooo.com/a.pdf"));
 		assertTrue(filter.accept("http://www.sidooo.com/a.xls"));
 		assertTrue(filter.accept("http://www.sidooo.com/a.csv"));
-		assertFalse(filter.accept("http://www.sidooo.com/a.txt"));
+		assertTrue(filter.accept("http://www.sidooo.com/a.txt"));
 		assertTrue(filter.accept("http://www.sidooo.com/a"));
 		assertFalse(filter.accept("http://www.sidooo.com/a.js"));
 	}

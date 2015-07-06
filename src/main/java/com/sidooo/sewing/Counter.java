@@ -4,15 +4,14 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.Mapper;
-import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
-import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.Reducer.Context;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +24,6 @@ import com.sidooo.crawl.UrlStatus;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.seed.Statistics;
-import com.sidooo.senode.DatawareConfiguration;
 import com.sidooo.senode.MongoConfiguration;
 
 @Service("counter")
@@ -40,109 +38,102 @@ public class Counter extends SewingConfigured implements Tool{
 	public static final LongWritable UPDATE = new LongWritable(3);
 	public static final LongWritable LIMIT	= new LongWritable(4);
 	
-	public static class ReadFetchStatusMapper extends SewingMapReduce implements
+	public static class ReadFetchStatusMapper extends 
 		Mapper<Text, FetchContent, Text, FetchStatus> {
 
 		@Override
-		public void map(Text key, FetchContent value,
-				OutputCollector<Text, FetchStatus> output, Reporter reporter)
-				throws IOException {
+		public void map(Text key, FetchContent value, Context context)
+				throws IOException, InterruptedException {
 			
 			FetchStatus status = new FetchStatus();
 			status.setStatus(value.getStatus());
 			status.setFetchTime(value.getTimeStamp());
-			output.collect(key, status);
+			context.write(key, status);
 		}
 
 	}
 	
-	public static class CalcUrlResultReducer extends SewingMapReduce implements
+	public static class CalcUrlResultReducer extends 
 		Reducer<Text, FetchStatus, Text, LongWritable> {
 
 		@Override
-		public void reduce(Text key, Iterator<FetchStatus> values,
-				OutputCollector<Text, LongWritable> output, Reporter reporter)
-				throws IOException {
+		public void reduce(Text key, Iterable<FetchStatus> values, Context context)
+				throws IOException, InterruptedException {
 			
-			UrlStatus status = new UrlStatus(values);
-			
-			if (status.hasSucceed()) {
-				LOG.info("URL:" + key.toString() + ", SUCCESS");
-				output.collect(key, SUCCESS);
-				if (status.hasExpired()) {
-					LOG.info("URL:" + key.toString() + ", UPDATE");
-					output.collect(key, UPDATE);
-				}
+			UrlStatus status = UrlStatus.from(values);
+			if (status == UrlStatus.READY) {
+				context.write(key, WAIT);
+			} else if (status == UrlStatus.LATEST){
+				context.write(key, SUCCESS);
+			} else if (status == UrlStatus.FILTERED) {
+				context.write(key, LIMIT);
+			} else if (status == UrlStatus.UNREACHABLE) {
+				context.write(key, FAIL);
 			} else {
-				if (status.hasSizeLimit()) {
-					LOG.info("URL:" + key.toString() + ", LIMIT");
-					output.collect(key, LIMIT);
-				} else {
-					if (status.hasRetryLimit()) {
-						LOG.info("URL:" + key.toString() + ", FAIL");
-						output.collect(key, FAIL);
-					} else {
-						LOG.info("URL:" + key.toString() + ", WAIT");
-						output.collect(key, WAIT);
-					}
-				}
+				LOG.info("Unknown Url Status.");
 			}
 		}
 		
 	}
 	
 	//将URL按照种子设置分类
-	public static class ClassifyUrlMapper extends SewingMapReduce implements
+	public static class ClassifyUrlMapper extends 
 		Mapper<Text, LongWritable, Text, LongWritable> {
 		
+		private List<Seed> seeds;
+
 		@Override
-		public void configure(JobConf conf) {
-			checkCacheFiles(conf);
+		public void setup(Context context) throws IOException,
+				InterruptedException {
+
+			Configuration conf = context.getConfiguration();
+			seeds = CacheLoader.loadSeedList(conf);
+			if (seeds == null) {
+				throw new InterruptedException("Seed List is null.");
+			}
 		}
 
 		@Override
-		public void map(Text key, LongWritable value,
-				OutputCollector<Text, LongWritable> output, Reporter reporter)
-				throws IOException {
+		public void map(Text key, LongWritable value, Context context)
+				throws IOException, InterruptedException {
 			
 			String url = key.toString();
-			Seed seed = getSeedByUrl(url);
+			Seed seed = SeedService.getSeedByUrl(url, seeds);
 			if (seed == null) {
 				return;
 			}
 			
 			LOG.info("URL: " + url + ", Seed: " + seed.getId());
-			output.collect(new Text(seed.getId()), value);
+			context.write(new Text(seed.getId()), value);
 		}
 		
 		
 	}
 	
-	public static class CountReducer extends SewingMapReduce implements
+	public static class CountReducer extends 
 		Reducer<Text, LongWritable, NullWritable, NullWritable> {
 
 		private SeedService seedService; 
 		
 		@Override
-		public void configure(JobConf conf) {
+		public void setup(Context context) throws IOException,
+				InterruptedException {
+
 			@SuppressWarnings("resource")
-			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
+			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
 					MongoConfiguration.class);
-			context.scan("com.sidooo.seed");
-			seedService = context.getBean("seedService", SeedService.class);
+			appcontext.scan("com.sidooo.seed");
+			seedService = appcontext.getBean("seedService", SeedService.class);
 		}
 		
 		@Override
-		public void reduce(Text key, Iterator<LongWritable> values,
-				OutputCollector<NullWritable, NullWritable> output,
-				Reporter reporter) throws IOException {
+		public void reduce(Text key, Iterable<LongWritable> values, Context context) 
+				throws IOException, InterruptedException {
 			
 			String seedId = key.toString();
 			Statistics stat = new Statistics();
 			
-			while(values.hasNext()) {
-				
-				LongWritable value = values.next();
+			for(LongWritable value : values) {
 				
 				if (value.get() == SUCCESS.get()) {
 					stat.success ++;
@@ -150,8 +141,6 @@ public class Counter extends SewingConfigured implements Tool{
 					stat.fail ++;
 				} else if (value.get() == WAIT.get()) {
 					stat.wait ++;
-				} else if (value.get() == UPDATE.get()) {
-					stat.update ++;
 				} else if (value.get() == LIMIT.get()) {
 					stat.limit ++;
 				} else {
@@ -167,13 +156,13 @@ public class Counter extends SewingConfigured implements Tool{
 	}
 	
 	private void listUrl() throws Exception {
-		JobConf job = new JobConf(getConf(), Counter.class);
-
+		Job job = new Job(getConf());
 		job.setJobName("Sewing Counter 1");
-		
-		submitCrawlInput(job);
+		job.setJarByClass(Counter.class);
 
-		submitCountOutput(job);
+		TaskData.submitCrawlInput(job);
+
+		TaskData.submitCountOutput(job);
 
 		job.setMapperClass(ReadFetchStatusMapper.class);
 		job.setMapOutputKeyClass(Text.class);
@@ -183,19 +172,19 @@ public class Counter extends SewingConfigured implements Tool{
 		job.setOutputValueClass(LongWritable.class);
 		job.setNumReduceTasks(5);
 
-		JobClient.runJob(job);
+		job.waitForCompletion(true);
 	}
 	
 	private void countUrl() throws Exception {
-		JobConf job = new JobConf(getConf(), Counter.class);
-
+		Job job = new Job(getConf());
 		job.setJobName("Sewing Counter 2");
+		job.setJarByClass(Counter.class);
 		
 		List<Seed> seeds = seedService.getSeeds();
-		submitSeedCache(job, seeds);
-		submitCountInput(job);
+		CacheSaver.submitSeedCache(job, seeds);
+		TaskData.submitCountInput(job);
 
-		submitNullOutput(job);
+		TaskData.submitNullOutput(job);
 
 		job.setMapperClass(ClassifyUrlMapper.class);
 		job.setMapOutputKeyClass(Text.class);
@@ -203,7 +192,7 @@ public class Counter extends SewingConfigured implements Tool{
 		job.setReducerClass(CountReducer.class);
 		job.setNumReduceTasks(2);
 
-		JobClient.runJob(job);
+		job.waitForCompletion(true);
 		
 	}
 

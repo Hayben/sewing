@@ -4,16 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
-import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.util.EntityUtils;
 
 public class HttpFetcher extends Fetcher{
@@ -23,6 +19,10 @@ public class HttpFetcher extends Fetcher{
     private final int SMALL_FILE_MAX_SIZE = 25 * 1024 * 1024;
     
     private final int BUFFER_SIZE = 32 * 1024;
+    
+    private final int CONN_TIMEOUT = 10000;
+    
+    private final int READ_TIMEOUT = 90000;
 	
 	public HttpFetcher() {
 		client = new DefaultHttpClient();
@@ -38,10 +38,10 @@ public class HttpFetcher extends Fetcher{
 		http.addHeader("Cookie", "");
 		
 		//设置连接超时
-		client.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 10000);
+		client.getParams().setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, CONN_TIMEOUT);
 		
 		//设置读取数据超时
-		client.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 90000);
+		client.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, READ_TIMEOUT);
 		
         HttpResponse response = null;
         try {

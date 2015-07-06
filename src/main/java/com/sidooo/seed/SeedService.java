@@ -89,7 +89,7 @@ public class SeedService {
 	
 	public static Seed getSeedByUrl(String url, List<Seed> seeds) {
 		for (Seed seed : seeds) {
-			if (url.contains(seed.getUrl())) {
+			if (url.toLowerCase().startsWith(seed.getUrl().toLowerCase())) {
 				return seed;
 			}
 		}

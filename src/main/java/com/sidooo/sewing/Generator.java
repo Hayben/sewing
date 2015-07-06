@@ -3,18 +3,15 @@ package com.sidooo.sewing;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobClient;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.Mapper;
-import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.Reducer;
-import org.apache.hadoop.mapred.Reporter;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.sidooo.crawl.FetchContent;
 import com.sidooo.crawl.FetchStatus;
+import com.sidooo.crawl.Filter;
 import com.sidooo.crawl.UrlStatus;
 import com.sidooo.extractor.ContentDetector;
 import com.sidooo.extractor.ContentType;
@@ -34,10 +32,9 @@ import com.sidooo.senode.MongoConfiguration;
 @Service("generator")
 public class Generator extends SewingConfigured implements Tool {
 
-
 	@Autowired
 	private SeedService seedService;
-	
+
 	public static final String SUCCESS = "success";
 	public static final String FAIL = "fail";
 	public static final String WAIT = "wait";
@@ -46,12 +43,22 @@ public class Generator extends SewingConfigured implements Tool {
 
 	}
 
-	public static class GenerateMapper extends SewingMapReduce implements
+	public static class GenerateMapper extends
 			Mapper<Text, FetchContent, Text, FetchStatus> {
 
+		private List<Seed> seeds;
+
+		protected Filter filter = new Filter();
+
 		@Override
-		public void configure(JobConf conf) {
-			checkCacheFiles(conf);
+		public void setup(Context context) throws IOException,
+				InterruptedException {
+
+			Configuration conf = context.getConfiguration();
+			seeds = CacheLoader.loadSeedList(conf);
+			if (seeds == null) {
+				throw new InterruptedException("Seed List is null.");
+			}
 		}
 
 		private String[] getLinks(String url, String charset, byte[] content) {
@@ -64,9 +71,8 @@ public class Generator extends SewingConfigured implements Tool {
 		}
 
 		@Override
-		public void map(Text key, FetchContent value,
-				OutputCollector<Text, FetchStatus> output, Reporter reporter)
-				throws IOException {
+		protected void map(Text key, FetchContent value, Context context)
+				throws IOException, InterruptedException {
 
 			URL url = new URL(key.toString());
 			LOG.info("Url: " + key.toString() + ",Charset: "
@@ -80,14 +86,14 @@ public class Generator extends SewingConfigured implements Tool {
 						if (charset.length() <= 0) {
 							charset = "utf-8";
 						}
-						String[] links = getLinks(url.toString(),
-								charset, value.getContent());
+						String[] links = getLinks(url.toString(), charset,
+								value.getContent());
 						for (String link : links) {
-							if (accept(link)) {
+							if (filter.accept(link)) {
 								FetchStatus status = new FetchStatus();
 								status.setStatus(1);
 								status.setFetchTime(value.getTimeStamp());
-								output.collect(new Text(link), status);
+								context.write(new Text(link), status);
 							}
 						}
 					}
@@ -96,7 +102,7 @@ public class Generator extends SewingConfigured implements Tool {
 					ContentDetector detector = new ContentDetector();
 					ContentType type = detector.detect(value.getContent());
 					if ("text/html".equals(type.mime)) {
-						
+
 						String charset = type.charset;
 						if (charset.length() <= 0) {
 							charset = "utf-8";
@@ -104,11 +110,11 @@ public class Generator extends SewingConfigured implements Tool {
 						String[] links = getLinks(url.toString(), charset,
 								value.getContent());
 						for (String link : links) {
-							if (accept(link)) {
+							if (filter.accept(link)) {
 								FetchStatus status = new FetchStatus();
 								status.setStatus(1);
 								status.setFetchTime(value.getTimeStamp());
-								output.collect(new Text(link), status);
+								context.write(new Text(link), status);
 							}
 						}
 					}
@@ -117,59 +123,43 @@ public class Generator extends SewingConfigured implements Tool {
 
 			}
 
-			if (accept(url.toString())) {
+			if (filter.accept(url.toString())) {
 				FetchStatus status = new FetchStatus();
 				status.setStatus(value.getStatus());
 				status.setFetchTime(value.getTimeStamp());
-				output.collect(key, status);
+				context.write(key, status);
 			}
-		}
-
-		public void close() throws IOException {
-
 		}
 	}
 
-	public static class GenerateReducer extends SewingMapReduce implements
+	public static class GenerateReducer extends
 			Reducer<Text, FetchStatus, Text, NullWritable> {
-		
-		@Override
-		public void configure(JobConf conf) {
-			checkCacheFiles(conf);
-		}
-		
-		@Override
-		public void reduce(Text key, Iterator<FetchStatus> values,
-				OutputCollector<Text, NullWritable> output, Reporter reporter)
-				throws IOException {
 
-			Seed seed = getSeedByUrl(key.toString());
+		private List<Seed> seeds;
+
+		@Override
+		public void setup(Context context) throws IOException,
+				InterruptedException {
+
+			Configuration conf = context.getConfiguration();
+			seeds = CacheLoader.loadSeedList(conf);
+			if (seeds == null) {
+				throw new InterruptedException("Seed List is null.");
+			}
+		}
+
+		@Override
+		protected void reduce(Text key, Iterable<FetchStatus> values,
+				Context context) throws IOException, InterruptedException {
+			Seed seed = SeedService.getSeedByUrl(key.toString(), seeds);
 			if (seed == null) {
 				return;
 			}
-			
-			String url = key.toString();
-			
-			UrlStatus status = new UrlStatus(values);
 
-			if (status.hasSucceed()) {
-				if (status.hasExpired()) {
-					LOG.info("Add Url: " + url);
-					output.collect(key, NullWritable.get());
-				}
-			} else {
-				if (status.hasSizeLimit()) {
-					//文件太大， 放弃
-				} else {
-					if (status.hasRetryLimit()) {
-						//重试次数已经到达阀值， 放弃
-					} else {
-						LOG.info("Add Url: " + url);
-						output.collect(key, NullWritable.get());
-					}
-				}
+			UrlStatus status = UrlStatus.from(values);
+			if (status == UrlStatus.READY) {
+				context.write(key, NullWritable.get());
 			}
-
 		}
 
 	}
@@ -179,24 +169,27 @@ public class Generator extends SewingConfigured implements Tool {
 
 		// LOG.info("ZooKeeper:" + getConf().get("hbase.zookeeper.quorum"));
 
-		JobConf job = new JobConf(getConf(), Generator.class);
+		Job job = new Job(getConf());
 		job.setJobName("Sewing Generator");
+		job.setJarByClass(Generator.class);
 
 		// 设置缓存
 		List<Seed> seeds = seedService.getEnabledSeeds();
 		if (seeds.size() <= 0) {
 			LOG.warn("No Seed to fetch.");
-			return 0;
+			return 1;
+		} else {
+			LOG.info("Seed Count: " + seeds.size());
 		}
-		submitSeedCache(job, seeds);
+		CacheSaver.submitSeedCache(job, seeds);
 
 		// 设置输入的数据源
-		submitSeedInput(job, seeds);
-		int count = submitCrawlInput(job);
+		TaskData.submitSeedInput(job, seeds);
+		int count = TaskData.submitCrawlInput(job);
 		LOG.info("Crawl File Count: " + count);
 
 		// 设置输出
-		Path urlFile = submitUrlOutput(job);
+		Path urlFile = TaskData.submitUrlOutput(job);
 
 		// 设置计算流程
 		job.setMapperClass(GenerateMapper.class);
@@ -205,9 +198,10 @@ public class Generator extends SewingConfigured implements Tool {
 		job.setReducerClass(GenerateReducer.class);
 		job.setNumReduceTasks(30);
 
-		JobClient.runJob(job);
-		LOG.info("Output Size:" + getFileSize(urlFile));
-		
+		boolean success = job.waitForCompletion(true);
+		if (success)
+			LOG.info("Output Size:" + getFileSize(urlFile));
+
 		//
 		// FSDataInputStream hadoopStream = fs.open(outPath);
 		//

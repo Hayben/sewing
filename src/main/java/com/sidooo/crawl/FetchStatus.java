@@ -6,7 +6,7 @@ import java.io.IOException;
 
 import org.apache.hadoop.io.Writable;
 
-public class FetchStatus implements Writable{
+public class FetchStatus implements Writable, Comparable<FetchStatus>{
 	
 	private long   fetchTime = System.currentTimeMillis();
 	private int	   status = 0;
@@ -43,6 +43,21 @@ public class FetchStatus implements Writable{
 	public void write(DataOutput out) throws IOException {
 		out.writeLong(this.fetchTime);
 		out.writeInt(this.status);
+	}
+
+	@Override
+	public int compareTo(FetchStatus target) {
+		long thisTime = this.getFetchTime();
+		long targetTime = this.getFetchTime();
+		if (thisTime < targetTime) {
+			return -1;
+		}
+		
+		if (thisTime == targetTime) {
+			return 0;
+		}
+		
+		return 1;
 	}
 
 }

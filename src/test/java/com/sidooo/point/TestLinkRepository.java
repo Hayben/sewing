@@ -2,8 +2,6 @@ package com.sidooo.point;
 
 import static org.junit.Assert.*;
 
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,11 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
-
-import com.sidooo.senode.DatawareConfiguration;
+import com.sidooo.senode.MongoConfiguration;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes=DatawareConfiguration.class, loader=AnnotationConfigContextLoader.class)
+@ContextConfiguration(classes=MongoConfiguration.class, loader=AnnotationConfigContextLoader.class)
 public class TestLinkRepository {
 
 	@Autowired
@@ -66,8 +63,9 @@ public class TestLinkRepository {
 		assertEquals(link.getKeyword(), mock.getKeyword());
 		assertEquals(link.getType(), mock.getType());
 		String[] pointIds = link.getPointList();
-		assertEquals(pointIds[0], "abcdefg");
-		assertEquals(pointIds[1], "hijklmn");
+		assertEquals(pointIds.length, 2);
+		assertEquals(pointIds[0], "hijklmn");
+		assertEquals(pointIds[1], "abcdefg");
 	}
 	
 

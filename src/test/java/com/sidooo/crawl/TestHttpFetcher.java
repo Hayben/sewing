@@ -1,4 +1,4 @@
-package com.sidooo.fetcher;
+package com.sidooo.crawl;
 
 import static org.junit.Assert.*;
 

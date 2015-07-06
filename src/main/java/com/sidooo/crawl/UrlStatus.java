@@ -1,73 +1,77 @@
 package com.sidooo.crawl;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+public enum UrlStatus {
+	READY(0),
+	LATEST(1),
+	FILTERED(2),
+	UNREACHABLE(2);
+	
+	private int value = 0;
+	
+	private UrlStatus(int value) {
+		this.value = value;
+	}
+	
+	public static final long PERIOD = 15 * 24 * 60 * 60 * 1000;
+	public static final int  RETRY_LIMIT = 15;
+	
+	public static UrlStatus from(Iterable<FetchStatus> fetches) {
 
-public class UrlStatus {
-	
-	private final long PERIOD = 10 * 24 * 60 * 60 * 1000;
-	private final int  RETRY_LIMIT = 15;
-	
-	List<FetchStatus> status;
-	
-	public UrlStatus(List<FetchStatus> status) {
-		this.status = status;
-	}
-	
-	public UrlStatus(Iterator<FetchStatus> it) {
-		status = new ArrayList<FetchStatus>();
-		while(it.hasNext()) {
-			status.add(it.next());
-		}
-	}
-	
-	public boolean hasSizeLimit() {
-		for(FetchStatus it : status) {
-			if (it.getStatus() == 199) {
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	public boolean hasRetryLimit() {
-		int count = 0;
-		for(FetchStatus it : status) {
+		long  lastSuccessTime = 0;
+		long lastFetchTime = 0;
+		boolean hasSuccess = false;
+		boolean hasFiltered = false;
+		int retryCount = 0;
+		for(FetchStatus it : fetches) {
 			int response = it.getStatus();
-			if (response != 200 &&
-					response != 0 &&
-					response != 1 &&
-					response != 199 ) {
-				count ++;
+			switch(response) {
+
+			case 0:
+				break;
+			case 1:
+				break;
+			case 199:
+				hasFiltered = true;
+				hasSuccess = false;
+				retryCount = 0;
+				break;
+			case 200:
+				hasSuccess = true;
+				lastSuccessTime = it.getFetchTime();
+				hasFiltered = false;
+				retryCount = 0;
+				break;
+			default: 
+				retryCount ++;
+				break;
 			}
-		}
-		
-		return count >= RETRY_LIMIT;
-	}
-	
-	public boolean hasExpired() {
-		for(FetchStatus it : status) {
 			
-			if (it.getStatus() == 200 &&
-				(System.currentTimeMillis() - it.getFetchTime()) < PERIOD) {
-				return false;
+			if (it.getFetchTime() > lastFetchTime) {
+				lastFetchTime = it.getFetchTime();
 			}
 		}
 		
-		return true;
-	}
-	
-	public boolean hasSucceed() {
-		
-		for (FetchStatus it : status) {
-			if (it.getStatus() == 200) {
-				return true;
-			}
+		if ((System.currentTimeMillis() - lastFetchTime) >= PERIOD) {
+			//任何URL超过时间期限， 就重新尝试获取
+			return READY;
 		}
 		
-		return false;
+		if (retryCount >= RETRY_LIMIT) {
+			//URL超过retry上限, 就放弃
+			return UNREACHABLE;
+		}
+
+		if (hasSuccess) {
+			if ((System.currentTimeMillis() - lastSuccessTime) < PERIOD) {
+				return LATEST;
+			}
+		} 
+		
+		if (hasFiltered) {
+			return FILTERED;
+		}
+		
+		return READY;
 	}
 
 }
