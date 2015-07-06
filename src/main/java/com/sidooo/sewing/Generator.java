@@ -9,6 +9,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -35,13 +36,6 @@ public class Generator extends SewingConfigured implements Tool {
 	@Autowired
 	private SeedService seedService;
 
-	public static final String SUCCESS = "success";
-	public static final String FAIL = "fail";
-	public static final String WAIT = "wait";
-
-	public Generator() {
-
-	}
 
 	public static class GenerateMapper extends
 			Mapper<Text, FetchContent, Text, FetchStatus> {
@@ -158,6 +152,7 @@ public class Generator extends SewingConfigured implements Tool {
 
 			UrlStatus status = UrlStatus.from(values);
 			if (status == UrlStatus.READY) {
+				context.getCounter("Sewing", "URL").increment(1);
 				context.write(key, NullWritable.get());
 			}
 		}
@@ -199,8 +194,12 @@ public class Generator extends SewingConfigured implements Tool {
 		job.setNumReduceTasks(30);
 
 		boolean success = job.waitForCompletion(true);
-		if (success)
+		if (success) {
 			LOG.info("Output Size:" + getFileSize(urlFile));
+			CounterGroup group = job.getCounters().getGroup("Sewing");
+			long urlCount = group.findCounter("URL").getValue();
+			System.out.println("URL Count: " + urlCount);
+		}
 
 		//
 		// FSDataInputStream hadoopStream = fs.open(outPath);
