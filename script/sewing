@@ -7,16 +7,20 @@ usage()
 }
 
 ROUND=0
+EXTRACT=0
 
-ARG=`getopt r:h $*`
+ARG=`getopt r:eh $*`
 
 set --$ARG;
 
-while getopts r:h PARAM_VAL
+while getopts r:eh PARAM_VAL
 do
 	case $PARAM_VAL in
 	r)
 		ROUND=$OPTARG;
+		;;
+	e)
+		EXTRACT=1
 		;;
 	h|help)
 		usage
@@ -42,7 +46,7 @@ do
 	if [ $? -ne 0 ] 
 	then 
 		echo "Generator Task Fail."
-		break
+		exit 1
 	fi
 	
 	echo "Run Crawl Task ..."
@@ -50,7 +54,7 @@ do
 	if [ $? -ne 0 ]
 	then 
 		echo "Crawl Task Fail."
-		break;
+		exit 1
 	fi
 	
 	echo "Run Count Task ..."
@@ -58,16 +62,21 @@ do
 	if [ $? -ne 0 ]
 	then 
 		echo "Counter Task Fail."
-		break;
+		exit 1
 	fi
 	
 	((i++));
 done
 
-echo "Run MongoExtractor Task ..."
-hadoop jar sewing-$VERSION.jar com.sidooo.sewing.MongoExtractor
-if [ $? -ne 0 ]
+if [ $EXTRACT -eq 1 ]
 then
-	echo "MongoExtractor Task Fail."
-	exit 1
+	echo "Run Extractor Task ..."
+	hadoop jar sewing-$VERSION.jar com.sidooo.sewing.HbaseExtractor
+	if [ $? -ne 0 ]
+	then
+		echo "Extractor Task Fail."
+		exit 1
+	fi
 fi
+
+exit 0
