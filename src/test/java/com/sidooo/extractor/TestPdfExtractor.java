@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.After;
@@ -26,14 +27,19 @@ public class TestPdfExtractor {
 	}
 
 	@Test
-	public void test() throws FileNotFoundException {
+	public void test() throws Exception {
 		File file = new File("src/test/resources/W020150106598588191582.pdf");
 		InputStream stream = new FileInputStream(file);
 		PdfExtractor extractor = new PdfExtractor();
 		extractor.setUrl(file.getPath());
-		extractor.extract(stream);
-		List<Item> contents = extractor.getItems();
-		assertEquals(1, contents.size());
+		extractor.setInput(stream, null);
+		List<String> items = new ArrayList<String>();
+		String line = null;
+		while((line = extractor.extract()) != null) {
+			items.add(line);
+		}
+		
+		assertEquals(1, items.size());
 		assertEquals("W020150106598588191582", extractor.getTitle());
 	}
 

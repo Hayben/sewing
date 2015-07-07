@@ -26,15 +26,19 @@ public class TestCsvExtractor {
 	}
 
 	@Test
-	public void test() throws FileNotFoundException {
+	public void test() throws Exception {
 		File file = new File("src/test/resources/7k7k.csv");
 		InputStream stream = new FileInputStream(file);
 		CsvExtractor extractor = new CsvExtractor();
 		extractor.setUrl(file.getPath());
+		extractor.setInput(stream, null);
 		int count = 0;
-		extractor.extract(stream);
-		List<Item> items = extractor.getItems();
-		assertEquals(6000, items.size());
+		String item = null;
+		while((item = extractor.extract()) != null) {
+			count++;
+		}
+		
+		assertEquals(6000, count);
 		assertEquals("7k7k", extractor.getTitle());
 	}
 

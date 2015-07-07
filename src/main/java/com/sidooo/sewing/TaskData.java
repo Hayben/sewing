@@ -56,7 +56,7 @@ public class TaskData {
 		SequenceFileOutputFormat.setCompressOutput(job, true);
 		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
 		SequenceFileOutputFormat.setOutputCompressionType(job,
-				CompressionType.BLOCK);
+				CompressionType.RECORD);
 	}
 
 	public static void submitUrlInput(Job job) throws Exception {
@@ -85,7 +85,7 @@ public class TaskData {
 		SequenceFileOutputFormat.setCompressOutput(job, true);
 		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
 		SequenceFileOutputFormat.setOutputCompressionType(job,
-				CompressionType.BLOCK);
+				CompressionType.RECORD);
 		
 		return urlFile;
 	}
@@ -202,7 +202,7 @@ public class TaskData {
 		SequenceFile.Writer writer = null;
 		writer = SequenceFile.createWriter(hdfs, job.getConfiguration(),
 				seedFile, Text.class, FetchContent.class,
-				CompressionType.BLOCK, new SnappyCodec());
+				CompressionType.RECORD, new SnappyCodec());
 
 		for (Seed seed : seeds) {
 			FetchContent content = new FetchContent();
@@ -236,7 +236,7 @@ public class TaskData {
 		SequenceFileOutputFormat.setCompressOutput(job, true);
 		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
 		SequenceFileOutputFormat.setOutputCompressionType(job,
-				CompressionType.BLOCK);
+				CompressionType.RECORD);
 	}
 	
 	public static void submitCrawlOutput(Job job, String date) throws Exception {
@@ -260,7 +260,7 @@ public class TaskData {
 		SequenceFileOutputFormat.setCompressOutput(job, true);
 		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
 		SequenceFileOutputFormat.setOutputCompressionType(job,
-				CompressionType.BLOCK);
+				CompressionType.RECORD);
 	}
 
 	public static void submitItemInput(Job job) throws Exception {
@@ -289,7 +289,7 @@ public class TaskData {
 		SequenceFileOutputFormat.setCompressOutput(job, true);
 		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
 		SequenceFileOutputFormat.setOutputCompressionType(job,
-				CompressionType.BLOCK);
+				CompressionType.RECORD);
 	}
 
 	public static void submitPointOutput(Job job) throws Exception {
@@ -305,7 +305,7 @@ public class TaskData {
 		SequenceFileOutputFormat.setOutputPath(job, pointFile);
 		SequenceFileOutputFormat.setCompressOutput(job, true);
 		SequenceFileOutputFormat.setOutputCompressorClass(job,SnappyCodec.class);
-		SequenceFileOutputFormat.setOutputCompressionType(job,CompressionType.BLOCK);
+		SequenceFileOutputFormat.setOutputCompressionType(job,CompressionType.RECORD);
 	}
 
 	public static void submitPointInput(Job job) throws Exception {
@@ -334,7 +334,7 @@ public class TaskData {
 		SequenceFileOutputFormat.setOutputPath(job, linkFile);
 		SequenceFileOutputFormat.setCompressOutput(job, true);
 		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
-		SequenceFileOutputFormat.setOutputCompressionType(job, CompressionType.BLOCK);
+		SequenceFileOutputFormat.setOutputCompressionType(job, CompressionType.RECORD);
 	}
 
 	public static void submitLinkInput(Job job) throws Exception {

@@ -2,6 +2,7 @@ package com.sidooo.sewing;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -31,6 +32,7 @@ import com.sidooo.point.Link;
 import com.sidooo.point.LinkRepository;
 import com.sidooo.point.Point;
 import com.sidooo.point.PointRepository;
+import com.sidooo.point.PointService;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.senode.MongoConfiguration;
@@ -46,6 +48,9 @@ public class MongoExtractor extends Configured implements Tool {
 
 	@Autowired
 	private CountService countService;
+	
+	@Autowired
+	private PointService pointService;
 
 	public static class ExtractMapper extends
 			Mapper<Text, FetchContent, Keyword, Text> {
@@ -85,7 +90,7 @@ public class MongoExtractor extends Configured implements Tool {
 			countService = appcontext.getBean("countService",
 					CountService.class);
 
-			pointRepo.clear();
+
 		}
 
 		@Override
@@ -111,7 +116,7 @@ public class MongoExtractor extends Configured implements Tool {
 			}
 
 			ContentExtractor extractor = null;
-			String mime = fetch.getMime();
+			String mime = fetch.getContentType();
 
 			// 根据爬虫的应答头部识别文件格式
 			if (mime != null && mime.length() > 0) {
@@ -129,8 +134,8 @@ public class MongoExtractor extends Configured implements Tool {
 			}
 
 			if (extractor == null) {
-				LOG.warn("Unknown File Format, Url: " + url + ", Content Size:"
-						+ content.length);
+//				LOG.warn("Unknown File Format, Url: " + url + ", Content Size:"
+//						+ content.length);
 				context.getCounter("Sewing", "ERR_NOEXTRACTOR").increment(1);
 				return;
 			}
@@ -138,39 +143,37 @@ public class MongoExtractor extends Configured implements Tool {
 			extractor.setUrl(url);
 			ByteArrayInputStream input = new ByteArrayInputStream(content);
 			try {
-				extractor.extract(input);
+				extractor.setInput(input, null);
 			} catch (Exception e) {
-				LOG.error("Extract " + url + " Fail.", e);
-				context.getCounter("Sewing", "ERR_EXTRACT").increment(1);
+//				LOG.error("Extract " + url + " Fail.", e);
+				context.getCounter("Sewing", "ERR_INPUT").increment(1);
 				return;
 			}
-			List<Item> items = extractor.getItems();
-			LOG.info(url + ", Extractor:" + extractor.getClass().getName() + ", Item Count:"
-					+ items.size());
-			for (Item item : items) {
-
-				if (item.getContentSize() <= 0) {
-					LOG.warn("Item:" + item.getId() +" Content NULL");
+			
+			String item = null;
+			Point point = new Point();
+			while((item = extractor.extract()) != null) {
+				if (item.length() <= 0) {
 					continue;
 				}
 
 				Keyword[] keywords = null;
 				try {
-					keywords = recognition.search(item.getContent());
+					keywords = recognition.search(item);
 				} catch (Exception e) {
-					LOG.error("Item:" + item.getId() +" Recognite Fail.", e);
+//					LOG.error("Item:" + item.getId() +" Recognite Fail.", e);
 					context.getCounter("Sewing", "ERR_RECOGNITE").increment(1);
 					continue;
 				}
 
 				if (keywords == null || keywords.length <= 0) {
-					LOG.warn("Item:" + item.getId() +" Keyword not found.");
+//					LOG.warn("Item:" + item.getId() +" Keyword not found.");
 					context.getCounter("Sewing", "ERR_NOKEYWORD").increment(1);
 					continue;
 				}
 
-				Point point = new Point();
-				point.setDocId(item.getId());
+				point.clear();
+				point.setDocId(Point.md5(item));
 				point.setTitle(seed.getName());
 				point.setUrl(url);
 				for (Keyword keyword : keywords) {
@@ -180,11 +183,19 @@ public class MongoExtractor extends Configured implements Tool {
 				}
 
 				pointRepo.createPoint(point);
-				countService.incPointCount(seed.getId());
-
-				LOG.info(point.toString());
 				context.getCounter("Sewing", "Point").increment(1);
+				//points.add(point);
+				//LOG.info(point.toString());
+
 			}
+			extractor.close();
+		
+			
+			//countService.incPointCount(seed.getId(), points.size());
+			
+			//LOG.info(url + ", Extractor:" + extractor.getClass().getName() + ", Item Count:"
+			//		+ items.size());
+			
 		}
 	}
 
@@ -204,7 +215,6 @@ public class MongoExtractor extends Configured implements Tool {
 			linkRepo = appcontext.getBean("linkRepository",
 					LinkRepository.class);
 
-			linkRepo.clear();
 		}
 
 		@Override
@@ -237,7 +247,12 @@ public class MongoExtractor extends Configured implements Tool {
 	@Override
 	public int run(String[] arg0) throws Exception {
 
-		Job job = new Job(getConf());
+		Configuration conf = getConf();
+		conf.setInt("mapreduce.map.cpu.vcores", 4);
+		LOG.info("mapreduce.map.cpu.vcores : " + getConf().getInt("mapreduce.map.cpu.vcores", 1));
+		
+		
+		Job job = new Job(conf);
 		job.setJobName("Sewing Extract");
 		job.setJarByClass(MongoExtractor.class);
 
@@ -265,6 +280,9 @@ public class MongoExtractor extends Configured implements Tool {
 		for (Seed seed : seeds) {
 			countService.resetCount(seed.getId());
 		}
+		
+		pointService.clearPoints();
+		pointService.clearLinks();
 
 		boolean success = job.waitForCompletion(true);
 		if (success) {

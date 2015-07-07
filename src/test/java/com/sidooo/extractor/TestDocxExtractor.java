@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.After;
@@ -26,17 +27,22 @@ public class TestDocxExtractor {
 	}
 
 	@Test
-	public void test() throws FileNotFoundException {
+	public void test() throws Exception {
 		File file = new File("src/test/resources/P020140829352377824843.docx");
 		InputStream stream = new FileInputStream(file);
 		DocxExtractor extractor = new DocxExtractor();
 		extractor.setUrl(file.getPath());
-		extractor.extract(stream);
-		List<Item> contents = extractor.getItems();
-		assertEquals(1, contents.size());
+		extractor.setInput(stream, null);
+		String item = null;
+		List<String> items = new ArrayList<String>();
+		while((item = extractor.extract()) != null) {
+			items.add(item);
+		}
+		assertEquals(1, items.size());
 		assertEquals("P020140829352377824843", extractor.getTitle());
-		String[] lines = contents.get(0).getContent().trim().split("\n");
-		assertEquals(lines[0], "广发内需增长灵活配置混合型证券投资基金");
+		item = items.get(0);
+		String[] lines = item.split("\n");
+		assertEquals(lines[4].trim(), "广发内需增长灵活配置混合型证券投资基金");
 	}
 
 }

@@ -3,78 +3,50 @@ package com.sidooo.extractor;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
-import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.html.HtmlParser;
 import org.apache.tika.sax.BodyContentHandler;
-import org.apache.tika.sax.Link;
-import org.apache.tika.sax.LinkContentHandler;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-import org.xml.sax.SAXException;
 
 public class HtmlExtractor extends ContentExtractor {
 	
+	private BufferedInputStream stream = null;
+	
+	private String content = null;
+	
+	@Override
+	public void setInput(InputStream input, String charset) throws Exception {
+		stream = new BufferedInputStream(input);
+		stream.mark(stream.available()+1);
+		BodyContentHandler handler = new BodyContentHandler(MAX_SIZE);
+		Metadata metadata = new Metadata();
+		HtmlParser parser = new HtmlParser();
+		ParseContext context = new ParseContext();
+		parser.parse(stream, handler, metadata, context);
+		
+		setTitle(metadata.get("title"));
+		content = handler.toString();
+	}
 
 	@Override
-	public void extract(InputStream stream) {
-		InputStream input = new BufferedInputStream(stream);
-		clearItems();
+	public String extract() {
 		try {
-			input.mark(input.available()+1);
-			BodyContentHandler handler = new BodyContentHandler();
-			Metadata metadata = new Metadata();
-			HtmlParser parser = new HtmlParser();
-			ParseContext context = new ParseContext();
-			parser.parse(input, handler, metadata, context);
-			
-			setTitle(metadata.get("title"));
-			addItem(handler.toString());
-
-		} catch (Exception e) {
-			e.printStackTrace();
+			return content;
 		} finally {
-			finish();
+			content = null;
 		}
 	}
-	
-	public void extractLink(InputStream stream) {
-		
-		try {
-			Metadata metadata = new Metadata();
-			LinkContentHandler linkHandler = new LinkContentHandler();
-			
-			HtmlParser htmlParser = new HtmlParser();
-			htmlParser.parse(stream, linkHandler, metadata);
-			
-			List<Link> links = linkHandler.getLinks();
-			for(Link link : links) {
-				addLink(link.getUri());
+
+	@Override
+	public void close() {
+		if (stream != null) {
+			try {
+				stream.close();
+			} catch (IOException e) {
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
-	}
-	
-	public void extractLink(InputStream stream, String charset) {
 		
-		Document doc;
-		try {
-			doc = Jsoup.parse(stream, charset, this.path);
-		} catch (IOException e) {
-			return;
-		}
-		Elements links = doc.select("a[href]");
-		for(Element link : links) {
-			String url = link.attr("abs:href");
-			addLink(url);
-		}
 	}
-	
-	
+
 }

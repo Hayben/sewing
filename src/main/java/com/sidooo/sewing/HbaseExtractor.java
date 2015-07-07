@@ -13,6 +13,7 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableReducer;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
@@ -32,13 +33,11 @@ import org.springframework.stereotype.Service;
 
 import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
+import com.sidooo.counter.CountService;
 import com.sidooo.crawl.FetchContent;
+import com.sidooo.crawl.Filter;
 import com.sidooo.extractor.ContentExtractor;
-import com.sidooo.point.Item;
-import com.sidooo.point.Link;
-import com.sidooo.point.LinkRepository;
 import com.sidooo.point.Point;
-import com.sidooo.point.PointRepository;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.senode.MongoConfiguration;
@@ -53,14 +52,24 @@ public class HbaseExtractor extends Configured implements Tool {
 	private SeedService seedService;
 
 	public static class ExtractMapper extends
-			Mapper<Text, FetchContent, Keyword, Text> {
+			Mapper<Text, FetchContent, Text, Point> {
 
 		private Recognition recognition;
 
 		private List<Seed> seeds;
 		
-		private PointRepository pointRepo;
-
+		private Filter filter ;
+		
+		private CountService countService;
+		
+		private int pointCount = 0;
+		private int linkCount = 0;
+		
+		private int errNoExtractor = 0;
+		private int errInput = 0;
+		private int errRecognite = 0;
+		private int errNoKeyword = 0;
+		
 		@Override
 		public void setup(Context context) throws IOException,
 				InterruptedException {
@@ -78,18 +87,18 @@ public class HbaseExtractor extends Configured implements Tool {
 			}
 			recognition = new Recognition();
 			
-			@SuppressWarnings("resource")
-			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
-					MongoConfiguration.class);
-			appcontext.scan("com.sidooo.point");
-			pointRepo = appcontext.getBean("pointRepository", PointRepository.class);
-			pointRepo.clear();
+			filter = new Filter();
 		}
 
 		@Override
 		public void cleanup(Context context) throws IOException,
 				InterruptedException {
-
+			context.getCounter("Sewing", "Point").increment(pointCount);
+			context.getCounter("Sewing", "Link").increment(linkCount);
+			context.getCounter("Sewing", "ERR_NOEXTRACTOR").increment(errNoExtractor);
+			context.getCounter("Sewing", "ERR_INPUT").increment(errInput);
+			context.getCounter("Sewing", "ERR_NOKEYWORD").increment(errNoKeyword);
+			context.getCounter("Sewing", "ERR_RECOGNITE").increment(errRecognite);
 		}
 
 		@Override
@@ -109,8 +118,18 @@ public class HbaseExtractor extends Configured implements Tool {
 			}
 
 			ContentExtractor extractor = null;
-			String mime = fetch.getMime();
-
+			String mime = fetch.getContentType();
+			
+			LOG.info("Url: " + url 
+					+ ", Response: " + fetch.getStatus() 
+					+ ", ReadSize:" + content.length
+					+ ", FetchSize:" + fetch.getContentSize()
+					+ ", Mime:" + mime);
+			
+			if (fetch.getStatus() != 200) {
+				return;
+			}
+			
 			// 根据爬虫的应答头部识别文件格式
 			if (mime != null && mime.length() > 0) {
 				extractor = ContentExtractor.getInstanceByMime(mime);
@@ -118,7 +137,17 @@ public class HbaseExtractor extends Configured implements Tool {
 
 			// 根据后缀名识别出文件格式
 			if (extractor == null) {
-				extractor = ContentExtractor.getInstanceByUrl(url);
+				String filename = fetch.getContentFilename();
+				if (filename != null) {
+					Filter filter = new Filter();
+					if (filter.accept(filename)) {
+						extractor = ContentExtractor.getInstanceByUrl(filename);
+					} else {
+						return;
+					}
+				}else {
+					extractor = ContentExtractor.getInstanceByUrl(url);
+				}
 			}
 
 			// 根据内容识别文件格式
@@ -127,125 +156,72 @@ public class HbaseExtractor extends Configured implements Tool {
 			}
 
 			if (extractor == null) {
-				LOG.warn("Unknown File Format, Url: " + url + ", Content Size:"
-						+ content.length);
+				this.errNoExtractor ++ ;
 				return;
 			}
+			
+			LOG.info("Extractor:" + extractor.getClass().getName());
 
 			extractor.setUrl(url);
 			ByteArrayInputStream input = new ByteArrayInputStream(content);
 			try {
-				extractor.extract(input);
-			} catch (Exception e) {
-				LOG.error("Extract " + url + " Fail.", e);
+				extractor.setInput(input, null);
+			} catch (Exception e1) {
+				this.errInput ++;
 				return;
 			}
-			List<Item> items = extractor.getItems();
-			LOG.info("Url:" + url + ", Extractor:"
-					+ extractor.getClass().getName() + ", Item Count:"
-					+ items.size());
-			for (Item item : items) {
 
-				if (item.getContentSize() <= 0) {
-					LOG.warn("Content NULL, Url: " + url);
+			int itemCount = 0;
+			Point point = new Point();
+			String item = null;
+			while( (item = extractor.extract()) != null) {
+
+				itemCount ++;
+				
+				if (item.length() <= 0) {
 					continue;
 				}
 
 				Keyword[] keywords = null;
 				try {
-					keywords = recognition.search(item.getContent());
+					keywords = recognition.search(item);
 				} catch (Exception e) {
-					LOG.error("Recognite Fail.", e);
+					this.errRecognite ++;
 					continue;
 				}
 
 				if (keywords == null || keywords.length <= 0) {
-					LOG.warn("Keyword not found.");
+					this.errNoKeyword ++;
 					continue;
 				}
 
-				Point point = new Point();
-				point.setDocId(item.getId());
+				point.clear();
+				point.setDocId(Point.md5(item));
 				point.setTitle(seed.getName());
 				point.setUrl(url);
 				for (Keyword keyword : keywords) {
 					point.addLink(keyword);
-					context.write(keyword, new Text(point.getDocId()));
+					linkCount ++;
 				}
 
-				pointRepo.createPoint(point);
+				pointCount ++;
+				context.write(new Text(point.getDocId()), point);
+				//LOG.info(point.toString());
 
-				//context.write(new Text(point.getDocId()), point);
-				
-				LOG.info("PointId:" + point.getDocId() + ", Keyword Count:"
-						+ point.getLinks().length);
-				context.getCounter("Sewing", "Point").increment(1);
 			}
+			
+			extractor.close();
+//			countService.incLinkCount(seed.getId(), linkCount);
+//			countService.incPointCount(seed.getId(), pointCount);
+			
+			LOG.info("Extractor:" + extractor.getClass().getName() 
+					+ ", Item Count:" + itemCount);
 
 		}
 	}
+
 
 	public static class ExtractReducer extends
-			Reducer<Text, Point, Text, Point> {
-
-		@Override
-		protected void reduce(Text key, Iterable<Point> values, Context context)
-				throws IOException, InterruptedException {
-
-			Iterator<Point> it = values.iterator();
-			if (it.hasNext()) {
-				Point point = it.next();
-				context.write(key, point);
-				context.getCounter("Sewing", "Point").increment(1);
-			}
-		}
-	}
-	
-	public static class ExtractReducerToMongo extends 
-		Reducer<Keyword, Text, NullWritable, NullWritable> {
-			
-		
-		private LinkRepository linkRepo;
-		
-		@Override
-		public void setup(Context context) throws IOException,
-				InterruptedException {
-
-			@SuppressWarnings("resource")
-			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
-					MongoConfiguration.class);
-			appcontext.scan("com.sidooo.point");
-			linkRepo = appcontext.getBean("linkRepository", LinkRepository.class);
-			linkRepo.clear();
-		}
-		
-		@Override
-		public void cleanup(Context context) throws IOException,
-				InterruptedException {
-
-		}
-		
-		@Override
-		protected void reduce(Keyword keyword, Iterable<Text> values, Context context)
-				throws IOException, InterruptedException {
-			
-			Link link = new Link();
-			link.setKeyword(keyword.getWord());
-			link.setType(keyword.getAttr());
-			
-			Iterator<Text> points = values.iterator();
-			if (points.hasNext()) {
-				Text point = points.next();
-				link.addPoint(point.toString());
-			}
-			
-			linkRepo.createLink(link);
-			
-			context.getCounter("Sewing", "Link").increment(1);
-		}
-	}
-
-	public static class ExtractReducer2 extends
 			TableReducer<Text, Point, ImmutableBytesWritable> {
 
 		@Override
@@ -284,44 +260,42 @@ public class HbaseExtractor extends Configured implements Tool {
 						Bytes.toBytes("attr"), Bytes.toBytes(link.getAttr()));
 				context.write(null, put2);
 			}
-
-			context.getCounter("Sewing", "Point").increment(1);
 		}
 	}
 
 	@Override
 	public int run(String[] arg0) throws Exception {
 
+		Configuration conf = getConf();
+		conf.setInt("mapreduce.map.cpu.vcores", 4);
+		LOG.info("mapreduce.map.cpu.vcores : " + getConf().getInt("mapreduce.map.cpu.vcores", 1));
+				
+		conf.set("mapreduce.map.memory.mb", "2048");
+		LOG.info("mapreduce.map.memory.mb : " + getConf().get("mapreduce.map.memory.mb"));
+		
+		conf.set("mapreduce.map.java.opts.max.heap", "1536");
+		LOG.info("mapreduce.map.java.opts.max.heap : " + getConf().get("mapreduce.map.java.opts.max.heap"));
+		
 		Job job = new Job(getConf());
 		job.setJobName("Sewing Extract");
 		job.setJarByClass(HbaseExtractor.class);
-
+		
 		// 设置缓存
 		List<Seed> seeds = seedService.getEnabledSeeds();
 		CacheSaver.submitSeedCache(job, seeds);
 		CacheSaver.submitNlpCache(job);
 
 		// 设置输入
-		TaskData.SubmitTestCrawlInput(job);
-
-		// 设置输出
-		// TaskData.submitPointOutput(job);
+		TaskData.submitCrawlInput(job);
 
 		// 设置计算流程
 		job.setMapperClass(ExtractMapper.class);
-		job.setMapOutputKeyClass(Keyword.class);
-		job.setMapOutputValueClass(Text.class);
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(Point.class);
 
-//		TableMapReduceUtil.initTableReducerJob("wmouth", ExtractReducer2.class,
-//				job);
-//		job.setNumReduceTasks(10);
-		
-		 job.setReducerClass(ExtractReducerToMongo.class);
-//		 job.setOutputKeyClass(Text.class);
-//		 job.setOutputValueClass(Point.class);
-//		 
+		TableMapReduceUtil.initTableReducerJob("wmouth", ExtractReducer.class,job);
 		TaskData.submitNullOutput(job);
-		job.setNumReduceTasks(10);
+		job.setNumReduceTasks(15);
 		
 		boolean success = job.waitForCompletion(true);
 		if (success) {
@@ -329,6 +303,9 @@ public class HbaseExtractor extends Configured implements Tool {
 			Counter counter = group.findCounter("Point");
 			long pointCount = counter.getValue();
 			System.out.println("Point Count: " + pointCount);
+			counter = group.findCounter("Link");
+			long linkCount = counter.getValue();
+			System.out.println("Link Count: " + linkCount);
 			return 0;
 
 		} else {

@@ -1,7 +1,6 @@
 package com.sidooo.sewing;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configuration;

@@ -3,11 +3,11 @@ package com.sidooo.point;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.security.MessageDigest;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Writable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -44,6 +44,13 @@ public class Point implements Writable{
 		docId = "";
 		title = "";
 		links = new HashSet<Keyword>();
+	}
+	
+	public void clear() {
+		this.docId = null;
+		this.title = null;
+		this.url = null;
+		this.links.clear();
 	}
 	
 	public String getDocId() {
@@ -131,6 +138,29 @@ public class Point implements Writable{
 		}
 		
 		return build.toString();
+	}
+	
+	public static String md5(String content) {
+		
+    	MessageDigest digest;
+    	try {
+    		digest = MessageDigest.getInstance("MD5");
+    	} catch(Exception e) {
+    		return "ffffffff00000000";
+    	}
+    	
+    	digest.update(content.getBytes());
+    	byte[] md5 = digest.digest();
+    	return Bytes.toHex(md5);
+//    	StringBuffer hexString = new StringBuffer();
+//    	for (int i = 0; i < md5.length; i++) {
+//          String shaHex = Integer.toHexString(md5[i] & 0xFF);
+//          if (shaHex.length() < 2) {
+//              hexString.append(0);
+//          }
+//          hexString.append(shaHex);
+//    	}
+//    	return hexString.toString();
 	}
 
 }

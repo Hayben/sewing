@@ -1,43 +1,22 @@
 package com.sidooo.extractor;
 
 import java.io.InputStream;
-import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.io.FilenameUtils;
 
-import com.sidooo.point.Item;
-
 
 public abstract class ContentExtractor {
 
+	protected final int MAX_SIZE = 25 * 1024 * 1024;
+	
 	private String title;
-	
-	private List<Item> items = new ArrayList<Item>();
-	
-	private Set<String> links = new HashSet<String>();
 	
 	protected String path;
 	
-	protected boolean reachEnd = false;
-	
 	public void setUrl(String url) {
 		this.path = url;
-	}
-	
-	public List<Item> getItems() {
-		return items;
-	}
-	
-	protected void addItem(String content) {
-		Item item = new Item();
-		item.setTitle(title);
-		item.setUrl(path);
-		item.setContent(content);
-		items.add(item);
 	}
 	
 	protected void setTitle(String title) {
@@ -48,32 +27,14 @@ public abstract class ContentExtractor {
 		return title;
 	}
 	
-	protected void clearItems() {
-		items.clear();
-	}
-	
-	public String[] getLinks() {
-		return links.toArray(new String[links.size()]);
-	}
-	
-	protected void addLink(String link) {
-		links.add(link);
-	}
-	
-	protected void clearLinks() {
-		links.clear();
-	}
+	abstract
+	public void setInput(InputStream input, String charset) throws Exception;
 	
 	abstract
-	public void extract(InputStream input);
+	public String extract();
 	
-	public boolean finished() {
-		return reachEnd;
-	}
-	
-	protected void finish() {
-		reachEnd = true;
-	}
+	abstract
+	public void close();
 
 	public static ContentExtractor getInstanceByUrl(String path) {
 		
@@ -141,6 +102,7 @@ public abstract class ContentExtractor {
 		
 		return getInstanceByMime(ct.mime);
 	}
+
 
 
 

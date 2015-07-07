@@ -51,9 +51,16 @@ public class TestRecognition extends TestCase {
 		return content;
 	}
 	
+	private void showMemorySize() {
+		long memSize = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+		System.out.println(memSize);
+	}
+	
 	@Test
 	public void testMobile() {
+
 		assertEquals("mobile", recog.match("13682827121"));
+
 	}
 	
 	@Test
@@ -107,8 +114,12 @@ public class TestRecognition extends TestCase {
 		File file = new File("src/test/resources/test.csv");
 		
 		String content = readFile(file);
-		System.out.println(content);
+		
+		showMemorySize();
 		Keyword[] keywords = recog.search(content);
+		showMemorySize();
+		keywords = recog.search(content);
+		showMemorySize();
 		assertEquals(3, keywords.length);
 		for(Keyword keyword : keywords) {
 			if ("mobile".equals(keyword.getAttr())) {
@@ -122,6 +133,7 @@ public class TestRecognition extends TestCase {
 			}
 		}
 		
+		
 	}
 	
 	@Test
@@ -134,6 +146,7 @@ public class TestRecognition extends TestCase {
 		for(Keyword keyword: keywords) {
 			System.out.println(keyword.getAttr() + keyword.getWord());
 		}
+		
 		assertEquals(2, keywords.length);
 		for(Keyword keyword : keywords) {
 			if ("busrid".equals(keyword.getAttr())) {

@@ -26,19 +26,19 @@ public class TestXlsExtractor {
 	}
 
 	@Test
-	public void test1() throws FileNotFoundException {
+	public void test1() throws Exception {
 		File file = new File("src/test/resources/江苏省无锡市南长区企业老总手机号码通讯名录.xls");
 		InputStream stream = new FileInputStream(file);
 		XlsExtractor extractor = new XlsExtractor();
 		extractor.setUrl(file.getPath());
+		extractor.setInput(stream, null);
 		int count = 0;
-		do {
-			extractor.extract(stream);
-			List<Item> contents = extractor.getItems();
-			count += contents.size();
-		} while(!extractor.finished());
+		String line = null;
+		while((line=extractor.extract()) != null) {
+			count ++;
+		};
 		
-		assertEquals(1494, count);
+		assertEquals(1496, count);
 		assertEquals("江苏省无锡市南长区企业老总手机号码通讯名录", extractor.getTitle());
 	}
 	
@@ -48,14 +48,14 @@ public class TestXlsExtractor {
 		InputStream stream = new FileInputStream(file);
 		XlsExtractor extractor = new XlsExtractor();
 		extractor.setUrl(file.getPath());
+		extractor.setInput(stream, null);
 		int count = 0;
-		do {
-			extractor.extract(stream);
-			List<Item> contents = extractor.getItems();
-			count += contents.size();
-		} while(!extractor.finished());
+		String line = null;
+		while((line = extractor.extract()) != null) {
+			count ++;
+		};
 		
-		assertEquals(591, count);
+		assertEquals(1030, count);
 		assertEquals("第四十二批住房保障公示清册", extractor.getTitle());
 	}
 

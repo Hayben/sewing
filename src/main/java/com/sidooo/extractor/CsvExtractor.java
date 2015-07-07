@@ -9,36 +9,33 @@ import org.apache.commons.io.FilenameUtils;
 
 public class CsvExtractor extends ContentExtractor{
 	
-	private final int LINE_LIMIT = 1000;
-	
-	private String headerLine;
+	BufferedReader reader = null;
 	
 	@Override
-	public void extract(InputStream stream) {
-		clearItems();
+	public void setInput(InputStream stream, String charset) throws Exception {
 		setTitle(FilenameUtils.getBaseName(path));
-		
-		BufferedReader reader = null;
+		reader = new BufferedReader(new InputStreamReader(stream));
+		//headerLine = reader.readLine();
+	}
+	
+	@Override
+	public String extract() {
 		try {
-			reader = new BufferedReader(new InputStreamReader(stream));
-			//headerLine = reader.readLine();
-
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-				addItem(line);
-			}
+			return reader.readLine();
 		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			return null;
+		}
+	}
+	
+	@Override
+	public void close() {
+		if (reader != null) {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
-
 	}
 
 }

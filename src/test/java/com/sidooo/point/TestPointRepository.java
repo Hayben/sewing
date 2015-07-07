@@ -2,6 +2,9 @@ package com.sidooo.point;
 
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,6 +69,31 @@ public class TestPointRepository {
 		Point point = pointRepo.getPoint(mock.getDocId());
 		assertEquals(point.getTitle(), mock.getTitle());
 		assertEquals(point.getLinks().length, mock.getLinks().length);
+	}
+	
+	@Test
+	public void testBatchCreatePoint1() {
+		for(int i=0; i<50000; i++) {
+			Point mock = mockPoint();
+			mock.setDocId("mockpoint_" + i);
+			pointRepo.createPoint(mock);
+		}
+		
+		assertEquals(pointRepo.getPointCount(), 50000);
+	}
+	
+	@Test
+	public void testBatchCreatePoint2() {
+		
+		List<Point> points = new ArrayList<Point>();
+		for(int i=0; i<50000; i++) {
+			Point mock = mockPoint();
+			mock.setDocId("mockpoint_" + i);
+			points.add(mock);
+		}
+		
+		pointRepo.createPoints(points);
+		assertEquals(pointRepo.getPointCount(), 50000);
 	}
 	
 	

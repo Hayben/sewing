@@ -30,10 +30,8 @@ public class TesCountService {
 	}
 
 	@Test
-	public void test() {
-		
-		
-		
+	public void testIncrement() {
+
 		String mockSeedId = "test";
 		
 		countService.resetCount(mockSeedId);
@@ -46,8 +44,19 @@ public class TesCountService {
 		
 		assertEquals(1, countService.getPointCount(mockSeedId));
 		assertEquals(3, countService.getLinkCount(mockSeedId));
+
+	}
+	
+	public void testIncrement2() {
+		String mockSeedId = "test";
 		
+		countService.resetCount(mockSeedId);
 		
+		countService.incPointCount(mockSeedId);
+		
+		countService.incPointCount(mockSeedId, 10000);
+		
+		assertEquals(10001, countService.getPointCount(mockSeedId));
 	}
 
 }

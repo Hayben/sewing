@@ -1,5 +1,7 @@
 package com.sidooo.point;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -21,6 +23,10 @@ public class PointRepository {
 	public String createPoint(Point point) {
 		mongo.insert(point);
 		return point.getDocId();
+	}
+	
+	public void createPoints(List<Point> points) {
+		mongo.insertAll(points);
 	}
 	
 	public Point getPoint(String pointId) {

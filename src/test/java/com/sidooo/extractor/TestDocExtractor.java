@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.After;
@@ -31,12 +32,38 @@ public class TestDocExtractor {
 		InputStream stream = new FileInputStream(file);
 		DocExtractor extractor = new DocExtractor();
 		extractor.setUrl(file.getPath());
-		extractor.extract(stream);
-		List<Item> contents = extractor.getItems();
-		assertEquals(1, contents.size());
+		extractor.setInput(stream, null);
+		
+		String item = null;
+		List<String> items = new ArrayList<String>();
+		while((item = extractor.extract()) != null) {
+			items.add(item);
+		}
+		assertEquals(1, items.size());
 		assertEquals("陈华忠融资方案", extractor.getTitle());
-		String[] lines = contents.get(0).getContent().split("\n");
+		item = items.get(0);
+		String[] lines = item.split("\n");
 		assertEquals(lines[0], "关于陈华忠融资方案分析报告");
+	}
+	
+	@Test
+	public void test2() throws Exception {
+		File file = new File("src/test/resources/efd8bb13a3b949d1172f043405380165.doc");
+		InputStream stream = new FileInputStream(file);
+		DocExtractor extractor = new DocExtractor();
+		extractor.setUrl(file.getPath());
+		extractor.setInput(stream, null);
+		
+		String item = null;
+		List<String> items = new ArrayList<String>();
+		while((item = extractor.extract()) != null) {
+			items.add(item);
+		}
+		assertEquals(1, items.size());
+		assertEquals("efd8bb13a3b949d1172f043405380165", extractor.getTitle());
+		item = items.get(0);
+		String[] lines = item.split("\n");
+		assertEquals(lines[0], "关于印发《劳动力市场职业分类与代码（LB501-2002）》的通知");
 	}
 
 }

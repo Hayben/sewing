@@ -4,16 +4,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.util.EntityUtils;
+
+import com.google.common.net.HttpHeaders;
 
 public class HttpFetcher extends Fetcher{
 	
@@ -43,7 +49,13 @@ public class HttpFetcher extends Fetcher{
 			return content;
 		}
 		
-		HttpGet http = new HttpGet(url.toString());
+		HttpGet http;
+		try {
+			http = new HttpGet(url.toURI());
+		} catch (URISyntaxException e1) {
+			content.setStatus(191);
+			return content;
+		}
 		http.addHeader("Accept", "text/html,application/xhtml+xml,application/xml,application/pdf;q=0.9,*/*;q=0.8");  
 		http.addHeader("Connection", "Keep-Alive");  
 		http.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0");  
@@ -55,10 +67,13 @@ public class HttpFetcher extends Fetcher{
 		//设置读取数据超时
 		client.getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, READ_TIMEOUT);
 		
-        HttpResponse response = null;
+        
+        InputStream in = null;
+        ByteArrayOutputStream out = null;
+        
         try {
 
-        	
+        	HttpResponse response = null;
             try {
 				response = client.execute(http);
 			} catch (ClientProtocolException e) {
@@ -75,24 +90,34 @@ public class HttpFetcher extends Fetcher{
             	content.setStatus(196);
             	return content;
             }
-                       
+            
+            Header[] headers = response.getAllHeaders();
+            for(Header header : headers) {
+            	content.addHeader(header.getName(), header.getValue());
+            }
+                  
             int retCode = response.getStatusLine().getStatusCode();
             content.setStatus(retCode);
-            
-            if (retCode >= 300) {
-                return content;
-            }
-            
+
             HttpEntity entity = response.getEntity();
             if (entity == null) {
             	return content;
             }
             
-            content.setMime(EntityUtils.getContentMimeType(entity));
-            content.setCharset(EntityUtils.getContentCharSet(entity));
-            content.setChunked(entity.isChunked());
+            long fileSize = entity.getContentLength();
+            content.setRemoteSize(fileSize);
+            if (fileSize > SMALL_FILE_MAX_SIZE) {
+            	content.setStatus(199);
+            	return content;
+            }
+           
+//            content.setMime(EntityUtils.getContentMimeType(entity));
+//            content.setCharset(EntityUtils.getContentCharSet(entity));
 
-            InputStream in;
+            if (retCode != 200) {
+                return content;
+            }
+            
 			try {
 				in = entity.getContent();
 			} catch (IllegalStateException e) {
@@ -103,19 +128,14 @@ public class HttpFetcher extends Fetcher{
 				content.setStatus(194);
 				return content;
 			}
-            byte[] buffer= new byte[BUFFER_SIZE];
-            long fileSize = entity.getContentLength();
-            if (fileSize > SMALL_FILE_MAX_SIZE) {
-            	content.setStatus(199);
-            	return content;
-            }
-            	
+
         	//small file
-        	ByteArrayOutputStream out = new ByteArrayOutputStream();
-            
-            int size = 0;
+        	out = new ByteArrayOutputStream();
+        	
             try {
-				while((size = in.read(buffer))!=-1) {
+            	byte[] buffer= new byte[BUFFER_SIZE];
+            	int size = 0;
+				while((size = in.read(buffer)) > 0) {
 					out.write(buffer,0, size);
 				}
 			} catch (IOException e) {
@@ -125,16 +145,7 @@ public class HttpFetcher extends Fetcher{
 			}
             
             content.setContent(out.toByteArray(), out.size());
-            try {
-				out.close();
-			} catch (IOException e) {
-			}
-            
-            try {
-				in.close();
-			} catch (IOException e) {
-			}
-            
+
             return content;
   
 
@@ -166,9 +177,26 @@ public class HttpFetcher extends Fetcher{
 //            }
 
         } finally {
+        	if (in != null) {
+                try {
+    				in.close();
+    			} catch (IOException e) {
+    			}
+                in = null;
+        	}
+        	
+
+        	if (out != null) {
+	            try {
+					out.close();
+				} catch (IOException e) {
+				}
+	            out = null;
+        	}
+            
         	
         	http.releaseConnection();
-                
+        	http = null;
         }
 	}
 	

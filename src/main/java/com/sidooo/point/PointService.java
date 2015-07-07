@@ -2,11 +2,6 @@ package com.sidooo.point;
 
 import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
-import com.sidooo.point.Link;
-import com.sidooo.point.Network;
-import com.sidooo.point.NetworkStatus;
-import com.sidooo.point.Point;
-import com.sidooo.point.PointRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,7 +29,7 @@ public class PointService {
 	@Autowired
 	private ItemRepository itemRepo;
 	
-	private Recognition recog = new Recognition();
+//	private Recognition recog = new Recognition();
 	
 	public void clearItems() {
 		itemRepo.clear();
@@ -56,54 +51,54 @@ public class PointService {
 		return status;
 	}
 	
-	public String addItem(Item item) {
-		
-		String itemId = itemRepo.saveItem(item);
-		
-		Keyword[] keywords = recog.search(item.getContent());
-		if (keywords.length <= 0) {
-			return itemId;
-		}
-		
-		Point point = pointRepo.getPoint(itemId);
-		if (point == null) {			
-			point = new Point();
-			point.setDocId(itemId);
-			point.setTitle(item.getTitle());
-			for(Keyword keyword : keywords) {
-				point.addLink(keyword);
-			}
-			pointRepo.createPoint(point);
-		} else {
-			point.setTitle(item.getTitle());
-			point.removeLinks();
-			for(Keyword keyword : keywords) {
-				point.addLink(keyword);
-			}
-			pointRepo.updatePoint(point);
-		}
-		
-		for(Keyword keyword : keywords) {
-			
-			Link link = linkRepo.getLink(keyword.getWord());
-			if (link == null) {
-				link = new Link();
-				link.setKeyword(keyword.getWord());
-				link.setType(keyword.getAttr());
-				link.addPoint(itemId);
-				linkRepo.createLink(link);
-			} else {
-				if (!link.existPoint(itemId)) {
-					link.addPoint(itemId);
-					linkRepo.updateLink(link);
-				}
-			}
-			
-
-		}
-		
-		return itemId;
-	}
+//	public String addItem(Item item) {
+//		
+//		String itemId = itemRepo.saveItem(item);
+//		
+//		Keyword[] keywords = recog.search(item.getContent());
+//		if (keywords.length <= 0) {
+//			return itemId;
+//		}
+//		
+//		Point point = pointRepo.getPoint(itemId);
+//		if (point == null) {			
+//			point = new Point();
+//			point.setDocId(itemId);
+//			point.setTitle(item.getTitle());
+//			for(Keyword keyword : keywords) {
+//				point.addLink(keyword);
+//			}
+//			pointRepo.createPoint(point);
+//		} else {
+//			point.setTitle(item.getTitle());
+//			point.removeLinks();
+//			for(Keyword keyword : keywords) {
+//				point.addLink(keyword);
+//			}
+//			pointRepo.updatePoint(point);
+//		}
+//		
+//		for(Keyword keyword : keywords) {
+//			
+//			Link link = linkRepo.getLink(keyword.getWord());
+//			if (link == null) {
+//				link = new Link();
+//				link.setKeyword(keyword.getWord());
+//				link.setType(keyword.getAttr());
+//				link.addPoint(itemId);
+//				linkRepo.createLink(link);
+//			} else {
+//				if (!link.existPoint(itemId)) {
+//					link.addPoint(itemId);
+//					linkRepo.updateLink(link);
+//				}
+//			}
+//			
+//
+//		}
+//		
+//		return itemId;
+//	}
 	
     public Network search(String keyword, int depth) throws Exception {
     	

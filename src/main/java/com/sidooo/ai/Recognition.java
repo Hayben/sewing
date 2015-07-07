@@ -1,6 +1,5 @@
 package com.sidooo.ai;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -23,15 +22,18 @@ import com.hankcs.hanlp.HanLP;
 import com.hankcs.hanlp.corpus.tag.Nature;
 import com.hankcs.hanlp.seg.Segment;
 import com.hankcs.hanlp.seg.common.Term;
-import com.hankcs.hanlp.tokenizer.NLPTokenizer;
 
 public class Recognition {
 	
 	
 	private List<Attribute> attrs = new ArrayList<Attribute>();
-	
+	private Segment segment = null;
 	public Recognition() {
 		this.load();
+		segment = HanLP.newSegment()
+					.enableNameRecognize(true)
+					.enableOrganizationRecognize(true)
+					.enablePlaceRecognize(true);
 	}
 	
 	public void load() {
@@ -182,34 +184,40 @@ public class Recognition {
 		return null;
 	}
 	
+	private void showMemorySize() {
+		long memSize = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+		System.out.println(memSize);
+	}
+	
 	public Keyword[] search(String content) {
 		
 		Set<Keyword> keywords = new HashSet<Keyword>();
 		
-		String[] lines = content.split("\n");
-		if (lines.length == 2) {
-			
-			String token = detectToken(lines[0]);
-			if (token != null) {
-				String[] titles = lines[0].split(token);
-				String[] values = lines[1].split(token);
-				if (titles.length == values.length) {
-					// csv segment
-					for(int i=0; i<titles.length; i++) {
-						String attrId = match(values[i]);
-						if (attrId != null) {
-							Keyword keyword = new Keyword(values[i], attrId);
-							keywords.add(keyword);
-						}
-					}
-					return keywords.toArray(new Keyword[keywords.size()]);
-				}
-			}
-
-		} 
+//		String[] lines = content.split("\n");
+//		if (lines.length == 2) {
+//			
+//			String token = detectToken(lines[0]);
+//			if (token != null) {
+//				String[] titles = lines[0].split(token);
+//				String[] values = lines[1].split(token);
+//				if (titles.length == values.length) {
+//					// csv segment
+//					for(int i=0; i<titles.length; i++) {
+//						String attrId = match(values[i]);
+//						if (attrId != null) {
+//							Keyword keyword = new Keyword(values[i], attrId);
+//							keywords.add(keyword);
+//						}
+//					}
+//					return keywords.toArray(new Keyword[keywords.size()]);
+//				}
+//			}
+//
+//		} 
 		
 		//使用分词引擎进行识别
-		List<Term> termList = NLPTokenizer.segment(content);
+		//List<Term> termList = NLPTokenizer.segment(content);
+		List<Term> termList = segment.seg(content);
 		for(Term term : termList) {
 			if (term.nature == Nature.nt && 
 				term.word.length() > 8 && 

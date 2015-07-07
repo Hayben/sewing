@@ -13,8 +13,16 @@ public class CountService {
 		template.incr(seedId+".point");
 	}
 	
+	public void incPointCount(String seedId, long count) {
+		template.incrBy(seedId+".point", count);
+	}
+	
 	public void incLinkCount(String seedId) {
 		template.incr(seedId+".link");
+	}
+	
+	public void incLinkCount(String seedId, long count) {
+		template.incrBy(seedId+".link", count);
 	}
 	
 	public long getPointCount(String seedId) {

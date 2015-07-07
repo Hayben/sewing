@@ -26,19 +26,19 @@ public class TestXlsxExtractor {
 	}
 
 	@Test
-	public void test() throws FileNotFoundException {
+	public void test() throws Exception {
 		File file = new File("src/test/resources/信贷客户资料.xlsx");
 		InputStream stream = new FileInputStream(file);
 		XlsxExtractor extractor = new XlsxExtractor();
 		extractor.setUrl(file.getPath());
+		extractor.setInput(stream, null);
 		int count = 0;
-		do {
-			extractor.extract(stream);
-			List<Item> contents = extractor.getItems();
-			count += contents.size();
-		} while(!extractor.finished());
+		String line = null;
+		while((line = extractor.extract()) != null) {
+			count ++;
+		};
 		
-		assertEquals(1000, count);
+		assertEquals(1008, count);
 		assertEquals("信贷客户资料", extractor.getTitle());
 	}
 

@@ -28,7 +28,7 @@ import com.sidooo.crawl.Filter;
 import com.sidooo.crawl.UrlStatus;
 import com.sidooo.extractor.ContentDetector;
 import com.sidooo.extractor.ContentType;
-import com.sidooo.extractor.HtmlExtractor;
+import com.sidooo.extractor.LinkExtractor;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.senode.MongoConfiguration;
@@ -62,11 +62,24 @@ public class Generator extends Configured implements Tool {
 
 		private String[] getLinks(String url, String charset, byte[] content) {
 			ByteArrayInputStream input = new ByteArrayInputStream(content);
-			HtmlExtractor extractor = new HtmlExtractor();
+			LinkExtractor extractor = new LinkExtractor();
 			extractor.setUrl(url);
-			extractor.extractLink(input, charset);
-			String[] links = extractor.getLinks();
-			return links;
+			try {
+				extractor.setInput(input, charset);
+				
+				List<String> links = new ArrayList<String>();
+				String line = null;
+				while( (line = extractor.extract()) != null) {
+					links.add(line);
+				}
+				
+				return links.toArray(new String[links.size()]);
+			} catch (Exception e) {
+				return null;
+			} finally {
+				extractor.close();
+			}
+
 		}
 
 		@Override
@@ -75,28 +88,10 @@ public class Generator extends Configured implements Tool {
 
 			URL url = new URL(key.toString());
 			LOG.info("Url: " + key.toString() + ",Charset: "
-					+ value.getCharset());
+					+ value.getContentCharset());
 			if (value.getStatus() == 200) {
-
-				if (value.getMime().length() > 0) {
-					// ContentType存在Response Header中
-					if (value.getMime().equalsIgnoreCase("text/html")) {
-						String charset = value.getCharset();
-						if (charset.length() <= 0) {
-							charset = "utf-8";
-						}
-						String[] links = getLinks(url.toString(), charset,
-								value.getContent());
-						for (String link : links) {
-							if (filter.accept(link)) {
-								FetchStatus status = new FetchStatus();
-								status.setStatus(1);
-								status.setFetchTime(value.getTimeStamp());
-								context.write(new Text(link), status);
-							}
-						}
-					}
-				} else {
+				String contentType = value.getContentType();
+				if (contentType == null || contentType.length() <= 0) {
 					// ContentType存在Body中
 					ContentDetector detector = new ContentDetector();
 					ContentType type = detector.detect(value.getContent());
@@ -117,9 +112,25 @@ public class Generator extends Configured implements Tool {
 							}
 						}
 					}
-
+				} else {
+					// ContentType存在Response Header中
+					if (contentType.equalsIgnoreCase("text/html")) {
+						String charset = value.getContentCharset();
+						if (charset == null || charset.length() <= 0) {
+							charset = "utf-8";
+						}
+						String[] links = getLinks(url.toString(), charset,
+								value.getContent());
+						for (String link : links) {
+							if (filter.accept(link)) {
+								FetchStatus status = new FetchStatus();
+								status.setStatus(1);
+								status.setFetchTime(value.getTimeStamp());
+								context.write(new Text(link), status);
+							}
+						}
+					}
 				}
-
 			}
 
 			if (filter.accept(url.toString())) {
