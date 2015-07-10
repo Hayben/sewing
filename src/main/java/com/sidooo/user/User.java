@@ -1,42 +1,55 @@
 package com.sidooo.user;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
 
-@Entity
-@Table(name = "users", catalog = "crawl")
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+
+@Document(collection = "user")
 public class User {
 
-	private String username;
-	private String password;
-	private boolean enabled;
-	private Set<UserRole> userRole = new HashSet<UserRole>(0);
-
-	public User() {
-	}
-
-	public User(String username, String password, boolean enabled) {
-		this.username = username;
-		this.password = password;
-		this.enabled = enabled;
-	}
-
-	public User(String username, String password, boolean enabled, Set<UserRole> userRole) {
-		this.username = username;
-		this.password = password;
-		this.enabled = enabled;
-		this.userRole = userRole;
-	}
-
 	@Id
-	@Column(name = "username", unique = true, nullable = false, length = 45)
+	private String id;
+	
+	@Field("register")
+	private long registerTime;
+	
+	@Field("email")
+	private String email;
+	
+	@Field("username")
+	private String username;
+	
+	@Field("password")
+	private String password;
+	
+	@Field("enabled")
+	private boolean enabled;
+	
+	@Field("expire")
+	private long expireTime;
+	
+	@Field("bankno")
+	private String bankno;
+	
+	@Field("level")
+	private int level;
+	
+	@Field("keywords")
+	private Map<String, String> keywords = new HashMap<String, String>();
+
+	public String getId() {
+		return this.id;
+	}
+	
+	public void setRegisterTime(long regtime) {
+		this.registerTime = regtime;
+	}
+
 	public String getUsername() {
 		return this.username;
 	}
@@ -44,8 +57,7 @@ public class User {
 	public void setUsername(String username) {
 		this.username = username;
 	}
-
-	@Column(name = "password", nullable = false, length = 60)
+	
 	public String getPassword() {
 		return this.password;
 	}
@@ -53,8 +65,7 @@ public class User {
 	public void setPassword(String password) {
 		this.password = password;
 	}
-
-	@Column(name = "enabled", nullable = false)
+	
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -63,13 +74,37 @@ public class User {
 		this.enabled = enabled;
 	}
 
-	@OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
-	public Set<UserRole> getUserRole() {
-		return this.userRole;
+	public String getEmail() {
+		return this.email;
+	}
+	
+	public void setEmail(String email) {
+		this.email = email;
+	}
+	
+	public void setLevel(int level) {
+		this.level = level;
+	}
+	
+	public int getLevel() {
+		return this.level;
+	}
+	
+	public int getKeywordCount() {
+		return this.keywords.size();
 	}
 
-	public void setUserRole(Set<UserRole> userRole) {
-		this.userRole = userRole;
+	
+	public boolean existKeyword(String keyword) {
+		return this.keywords.get(keyword) != null;
+	}
+	
+	public void addKeyword(String keyword) {
+		this.keywords.put(keyword, null);
 	}
 
+	public void setBankNumber(String bankno) {
+		this.bankno = bankno;
+	}
+	
 }
