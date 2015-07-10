@@ -304,7 +304,7 @@ public class MongoExtractor extends Configured implements Tool {
 				long seedPointCount = countService.getPointCount(seed.getId());
 				long seedLinkCount = countService.getLinkCount(seed.getId());
 
-				seedService.updateAnalysisStatistics(seed.getId(),
+				seedService.incAnalysisStatistics(seed.getId(),
 						seedPointCount, seedLinkCount);
 			}
 			return 0;

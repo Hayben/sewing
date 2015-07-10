@@ -350,10 +350,8 @@ public class TaskData {
 	}
 
 	public static void submitNullOutput(Job job) throws Exception {
-
 		job.setOutputFormatClass(NullOutputFormat.class);
 		job.setOutputKeyClass(NullWritable.class);
 		job.setOutputValueClass(NullWritable.class);
-
 	}
 }

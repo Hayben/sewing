@@ -49,7 +49,4 @@ public class PointRepository {
 		mongo.dropCollection(Point.class);
 	}
 	
-
-	
-
 }

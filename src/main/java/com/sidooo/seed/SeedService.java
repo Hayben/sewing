@@ -56,13 +56,9 @@ public class SeedService {
 		seed.setLimitCount(limitCount);
 		seedRepo.updateSeed(seedId, seed);
 	}
-
-	public void updateAnalysisStatistics(String seedId, long pointCount,
-			long linkCount) {
-		Seed seed = seedRepo.getSeed(seedId);
-		seed.setPointCount(pointCount);
-		seed.setLinkCount(linkCount);
-		seedRepo.updateSeed(seedId, seed);
+	
+	public void incAnalysisStatistics(String seedId, long pointCount, long linkCount) {
+		seedRepo.incAnalysisCount(seedId, pointCount, linkCount);
 	}
 
 	public boolean toggleSeed(String id) {

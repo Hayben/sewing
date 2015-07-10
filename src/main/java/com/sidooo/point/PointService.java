@@ -3,6 +3,8 @@ package com.sidooo.point;
 import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
 
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -144,7 +146,7 @@ public class PointService {
 		Pagination page = new Pagination(pageNo, pageSize, totalCount);
 
 		List<Item> items = itemRepo.getItemList(seedId, page.getFirstResult(),
-				pageSize);
+				pageSize);		
 		for (Item item : items) {
 			page.addItem(item);
 		}
@@ -159,5 +161,7 @@ public class PointService {
 	public Item getItem(String id) {
 		return itemRepo.getItem(id);
 	}
+	
+
 
 }

@@ -85,7 +85,6 @@ public class TestHtmlExtractor {
 		extractor.setUrl(file.getPath());
 		extractor.setInput(stream, null);
 		List<String> items = new ArrayList<String>();
-		
 		String item = null;
 		while((item = extractor.extract()) != null) {
 			items.add(item);
@@ -94,5 +93,6 @@ public class TestHtmlExtractor {
 		item = items.get(0);
 		assertTrue(item.length() > 0);
 	}
+	
 
 }

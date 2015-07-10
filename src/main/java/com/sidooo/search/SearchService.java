@@ -64,4 +64,6 @@ public class SearchService {
         context.getEnvironment().setDefaultProfiles("dev");
         return context;
     }
+    
+
 }

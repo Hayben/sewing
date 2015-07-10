@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 @Repository("seedRepo")
@@ -66,6 +67,50 @@ public class SeedRepository {
 //    	
 //    	mongo.updateFirst(query, update, Seed.class);
     }
+    
+    public void updateSeedConfig(String seedId, Seed seed) {
+    	Query query = new Query();
+    	Criteria criteria = Criteria.where("id").is(seedId);
+    	query.addCriteria(criteria);
+    	
+    	Update update = new Update();
+    	update.set("name", seed.getName());
+    	update.set("url", seed.getUrl());
+    	update.set("enabled", seed.getEnabled());
+    	update.set("type", seed.getType());
+    	update.set("level", seed.getLevel());
+    	update.set("reliability", seed.getReliability());
+    	
+    	mongo.updateFirst(query, update, Seed.class);
+    }
+    
+    public void updateCrawlCount(String seedId, long successCount,
+			long failCount, long waitCount, long limitCount) {
+    	Query query = new Query();
+    	Criteria criteria = Criteria.where("id").is(seedId);
+    	query.addCriteria(criteria);
+    	
+    	Update update = new Update();
+    	update.set("statistics.success", successCount);
+    	update.set("statistics.fail", failCount);
+    	update.set("statistics.wait", waitCount);
+    	update.set("statistics.limit", limitCount);
+    	
+    	mongo.updateFirst(query, update, Seed.class);
+    }
+    
+    public void incAnalysisCount(String seedId, long pointCount, long linkCount) {
+    	
+    	Query query = new Query();
+    	Criteria criteria = Criteria.where("id").is(seedId);
+    	query.addCriteria(criteria);
+    	
+    	Update update = new Update();
+    	update.inc("statistics.point", pointCount);
+    	update.inc("statistics.link", linkCount);
+    	
+    	mongo.updateFirst(query, update, Seed.class);
+    }
 
     public void deleteSeed(String seedId) {
 
@@ -77,6 +122,7 @@ public class SeedRepository {
     }
     
     public void clear() {
+    	//update.set("config", seedConfig);
     	mongo.dropCollection(Seed.class);
     }
 	

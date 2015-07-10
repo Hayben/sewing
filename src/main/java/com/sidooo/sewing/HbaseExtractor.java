@@ -16,13 +16,11 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableReducer;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
@@ -31,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.Gson;
 import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
 import com.sidooo.counter.CountService;
@@ -41,6 +40,7 @@ import com.sidooo.point.Point;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.senode.MongoConfiguration;
+import com.sidooo.senode.RedisConfiguration;
 
 
 @Service("hbaseExtractor")
@@ -52,7 +52,7 @@ public class HbaseExtractor extends Configured implements Tool {
 	private SeedService seedService;
 
 	public static class ExtractMapper extends
-			Mapper<Text, FetchContent, Text, Point> {
+			Mapper<Text, FetchContent, Keyword, Point> {
 
 		private Recognition recognition;
 
@@ -60,7 +60,7 @@ public class HbaseExtractor extends Configured implements Tool {
 		
 		private Filter filter ;
 		
-		private CountService countService;
+		private SeedService seedService;
 		
 		private int pointCount = 0;
 		private int linkCount = 0;
@@ -69,6 +69,7 @@ public class HbaseExtractor extends Configured implements Tool {
 		private int errInput = 0;
 		private int errRecognite = 0;
 		private int errNoKeyword = 0;
+		private int errTinyKey = 0;
 		
 		@Override
 		public void setup(Context context) throws IOException,
@@ -85,9 +86,20 @@ public class HbaseExtractor extends Configured implements Tool {
 			if (!CacheLoader.existHanlpJar(conf)) {
 				throw new InterruptedException("Hanlp Jar not found.");
 			}
+			for(Seed seed : seeds) {
+				seed.setPointCount(0);
+				seed.setPointCount(0);
+			}
+			
 			recognition = new Recognition();
 			
 			filter = new Filter();
+			
+			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
+					MongoConfiguration.class);
+			appcontext.scan("com.sidooo.seed");
+			seedService = appcontext.getBean("seedService",
+					SeedService.class);
 		}
 
 		@Override
@@ -99,6 +111,10 @@ public class HbaseExtractor extends Configured implements Tool {
 			context.getCounter("Sewing", "ERR_INPUT").increment(errInput);
 			context.getCounter("Sewing", "ERR_NOKEYWORD").increment(errNoKeyword);
 			context.getCounter("Sewing", "ERR_RECOGNITE").increment(errRecognite);
+			
+			for(Seed seed : seeds) {
+				seedService.incAnalysisStatistics(seed.getId(), seed.getPointCount(), seed.getLinkCount());
+			}
 		}
 
 		@Override
@@ -139,7 +155,6 @@ public class HbaseExtractor extends Configured implements Tool {
 			if (extractor == null) {
 				String filename = fetch.getContentFilename();
 				if (filename != null) {
-					Filter filter = new Filter();
 					if (filter.accept(filename)) {
 						extractor = ContentExtractor.getInstanceByUrl(filename);
 					} else {
@@ -200,17 +215,26 @@ public class HbaseExtractor extends Configured implements Tool {
 				point.setTitle(seed.getName());
 				point.setUrl(url);
 				for (Keyword keyword : keywords) {
-					point.addLink(keyword);
+					String word = keyword.getWord();
+					if (word == null || word.length() < 6) {
+						this.errTinyKey ++;
+						continue;
+					}
+					context.write(keyword, point);
 					linkCount ++;
+					seed.incLinkCount();
 				}
 
 				pointCount ++;
-				context.write(new Text(point.getDocId()), point);
+				
+				
+				seed.incPointCount();
 				//LOG.info(point.toString());
 
 			}
 			
 			extractor.close();
+			
 //			countService.incLinkCount(seed.getId(), linkCount);
 //			countService.incPointCount(seed.getId(), pointCount);
 			
@@ -222,43 +246,31 @@ public class HbaseExtractor extends Configured implements Tool {
 
 
 	public static class ExtractReducer extends
-			TableReducer<Text, Point, ImmutableBytesWritable> {
+			TableReducer<Keyword, Point, ImmutableBytesWritable> {
 
+		private Gson gson;
+		
 		@Override
-		protected void reduce(Text key, Iterable<Point> values, Context context)
+		public void setup(Context context) throws IOException,
+				InterruptedException {
+			gson = new Gson();
+		}
+		
+		@Override
+		protected void reduce(Keyword keyword, Iterable<Point> values, Context context)
 				throws IOException, InterruptedException {
-
-			Iterator<Point> it = values.iterator();
-			if (!it.hasNext()) {
-				return;
-			}
-
-			Point point = it.next();
-
-			Keyword[] links = point.getLinks();
-			for (Keyword link : links) {
-
-				LOG.info("Point Id:" + point.getDocId() + ", Keyword:" + link.getWord());
-
-				String rowkey1 = key.toString() + "_" + link.hash();
-				Put put1 = new Put(Bytes.toBytes(rowkey1));
-				put1.add(Bytes.toBytes("content"),
-						Bytes.toBytes("type"), Bytes.toBytes("point"));
-				put1.add(Bytes.toBytes("content"),
-						Bytes.toBytes("title"), Bytes.toBytes(point.getTitle()));
-				put1.add(Bytes.toBytes("content"),
-						Bytes.toBytes("url"), Bytes.toBytes(point.getUrl()));
-				context.write(null, put1);
-
-				String rowkey2 = link.hash() + "_" + key.toString();
-				Put put2 = new Put(Bytes.toBytes(rowkey2));
-				put2.add(Bytes.toBytes("content"),
-						Bytes.toBytes("type"), Bytes.toBytes("link"));
-				put2.add(Bytes.toBytes("content"),
-						Bytes.toBytes("word"), Bytes.toBytes(link.getWord()));
-				put2.add(Bytes.toBytes("content"),
-						Bytes.toBytes("attr"), Bytes.toBytes(link.getAttr()));
-				context.write(null, put2);
+			
+			for(Point point: values) {
+				
+				Put putPoint = new Put(Bytes.toBytes(keyword.hash()));
+				putPoint.add(Bytes.toBytes("points"),
+						Bytes.toBytes("point"), Bytes.toBytes(gson.toJson(point)));
+				context.write(null, putPoint);
+				
+				Put putKeyword = new Put(Bytes.toBytes(point.getDocId()));
+				putKeyword.add(Bytes.toBytes("keywords"),
+						Bytes.toBytes("keyword"), Bytes.toBytes(gson.toJson(keyword)));
+				context.write(null, putKeyword);
 			}
 		}
 	}
@@ -270,10 +282,10 @@ public class HbaseExtractor extends Configured implements Tool {
 		conf.setInt("mapreduce.map.cpu.vcores", 4);
 		LOG.info("mapreduce.map.cpu.vcores : " + getConf().getInt("mapreduce.map.cpu.vcores", 1));
 				
-		conf.set("mapreduce.map.memory.mb", "2048");
+		conf.set("mapreduce.map.memory.mb", "1536");
 		LOG.info("mapreduce.map.memory.mb : " + getConf().get("mapreduce.map.memory.mb"));
 		
-		conf.set("mapreduce.map.java.opts.max.heap", "1536");
+		conf.set("mapreduce.map.java.opts.max.heap", "1200");
 		LOG.info("mapreduce.map.java.opts.max.heap : " + getConf().get("mapreduce.map.java.opts.max.heap"));
 		
 		Job job = new Job(getConf());
@@ -306,6 +318,7 @@ public class HbaseExtractor extends Configured implements Tool {
 			counter = group.findCounter("Link");
 			long linkCount = counter.getValue();
 			System.out.println("Link Count: " + linkCount);
+			
 			return 0;
 
 		} else {

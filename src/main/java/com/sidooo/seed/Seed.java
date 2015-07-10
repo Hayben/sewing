@@ -127,8 +127,32 @@ public class Seed {
 		this.statistics.point = count;
 	}
 	
+	public long getPointCount() {
+		return this.statistics.point;
+	}
+	
+	public void incPointCount() {
+		this.statistics.point ++;
+	}
+	
+	public void incPointCount(long count) {
+		this.statistics.point += count;
+	}
+	
 	public void setLinkCount(long count) {
 		this.statistics.link = count;
+	}
+	
+	public long getLinkCount() {
+		return this.statistics.link;
+	}
+	
+	public void incLinkCount() {
+		this.statistics.link ++;
+	}
+	
+	public void incLinkCount(long count) {
+		this.statistics.link += count;
 	}
 	
 	public Statistics getStatistics() {

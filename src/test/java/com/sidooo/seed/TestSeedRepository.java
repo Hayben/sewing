@@ -159,7 +159,19 @@ public class TestSeedRepository extends TestCase {
 		for(Seed seed : revertSeeds) {
 			compareSeed(seed, mock);
 		}
+	}
+	
+	@Test
+	public void testIncAnalysisCount() {
+		assertEquals("test", seedRepo.getDatabaseName());
 		
+		Seed mock = mockSeed();
+		seedRepo.createSeed(mock);
+		
+		seedRepo.incAnalysisCount(mock.getId(), 1, 3);
+		Seed seed = seedRepo.getSeed(mock.getId());
+		assertEquals(seed.getPointCount(), 1);
+		assertEquals(seed.getLinkCount(), 3);
 	}
 	
 	

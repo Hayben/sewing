@@ -94,5 +94,11 @@ public class Keyword implements WritableComparable<Keyword>{
 		return Long.toHexString(crc32.getValue());
 	}
 	
+	public static String hash(String word) {
+		CRC32 crc32 = new CRC32();
+		crc32.update(word.getBytes());
+		return Long.toHexString(crc32.getValue());
+	}
+	
 	
 }
