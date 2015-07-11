@@ -61,13 +61,13 @@ public class TaskData {
 				CompressionType.RECORD);
 	}
 
-	public static void submitUrlInput(Job job) throws Exception {
+	public static void submitFeedInput(Job job) throws Exception {
 
 		FileSystem hdfs = FileSystem.get(job.getConfiguration());
 
-		Path urlFile = new Path("/sewing/urls");
+		Path urlFile = new Path("/sewing/feeds");
 		if (!hdfs.exists(urlFile)) {
-			throw new Exception("urls.txt not found.");
+			throw new Exception("feeds.txt not found.");
 		}
 
 //		SequenceFileInputFormat.addInputPath(job, urlFile);
@@ -77,10 +77,10 @@ public class TaskData {
 		job.setInputFormatClass(TextInputFormat.class);
 	}
 
-	public static Path submitUrlOutput(Job job) throws IOException {
+	public static Path submitFeedOutput(Job job) throws IOException {
 		FileSystem hdfs = FileSystem.get(job.getConfiguration());
 
-		Path urlFile = new Path("/sewing/urls");
+		Path urlFile = new Path("/sewing/feeds");
 		if (hdfs.exists(urlFile)) {
 			hdfs.delete(urlFile);
 		}
@@ -98,7 +98,7 @@ public class TaskData {
 	}
 
 	// 提交所有爬虫数据到输入中
-	public static int submitCrawlInput(Job job) throws Exception {
+	public static Path[] submitCrawlInput(Job job) throws Exception {
 		FileSystem hdfs = FileSystem.get(job.getConfiguration());
 
 		Path crawlDir = new Path("/sewing/crawl");
@@ -111,7 +111,7 @@ public class TaskData {
 		
 		job.setInputFormatClass(SequenceFileInputFormat.class);
 		
-		int count = 0;
+		List<Path> crawlFiles = new ArrayList<Path>();
 		FileStatus[] status = hdfs.listStatus(crawlDir);
 		for (int i = 0; i < status.length; i++) {
 			Path file = status[i].getPath();
@@ -120,13 +120,13 @@ public class TaskData {
 				if (hdfs.exists(new Path(file.toString() + "/_SUCCESS"))) {
 					LOG.info("Submit Crawl Input File: " + file.getName());
 					SequenceFileInputFormat.addInputPath(job, file);
-					count++;
+					crawlFiles.add(file);
 				}
 			}
 		}
 
 		
-		return count;
+		return crawlFiles.toArray(new Path[crawlFiles.size()]);
 	}
 	
 	public static Path[] submitCrawlInput(Job job, String date) throws Exception {
@@ -363,5 +363,35 @@ public class TaskData {
 		job.setOutputFormatClass(NullOutputFormat.class);
 		job.setOutputKeyClass(NullWritable.class);
 		job.setOutputValueClass(NullWritable.class);
+	}
+	
+	public static void submitUrldbInput(Job job) throws Exception {
+
+		FileSystem hdfs = FileSystem.get(job.getConfiguration());
+
+		Path urlFile = new Path("/sewing/urldb");
+		if (!hdfs.exists(urlFile)) {
+			throw new Exception("urldb not found.");
+		}
+
+		SequenceFileInputFormat.addInputPath(job, urlFile);
+		job.setInputFormatClass(SequenceFileInputFormat.class);
+		
+	}
+
+	public static void submitUrldbOutput(Job job) throws IOException {
+		FileSystem hdfs = FileSystem.get(job.getConfiguration());
+
+		Path urlFile = new Path("/sewing/urldb");
+		if (hdfs.exists(urlFile)) {
+			hdfs.delete(urlFile);
+		}
+
+		job.setOutputFormatClass(SequenceFileOutputFormat.class);
+		SequenceFileOutputFormat.setOutputPath(job, urlFile);
+		SequenceFileOutputFormat.setCompressOutput(job, true);
+		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+		SequenceFileOutputFormat.setOutputCompressionType(job,
+				CompressionType.RECORD);
 	}
 }

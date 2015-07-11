@@ -57,7 +57,15 @@ do
 		exit 1
 	fi
 	
-	echo "Run Count Task ..."
+	echo "Run Update Url Database Task ..."
+	hadoop jar sewing-$VERSION.jar com.sidooo.sewing.UrlDatabase
+	if [ $? -ne 0 ]
+	then 
+		echo "UrlDatabase Task Fail."
+		exit 1
+	fi
+	
+	echo "Run Counter Task ..."
 	hadoop jar sewing-$VERSION.jar com.sidooo.sewing.Counter
 	if [ $? -ne 0 ]
 	then 

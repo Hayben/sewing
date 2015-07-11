@@ -1,62 +1,62 @@
 package com.sidooo.sewing;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.stereotype.Service;
 
 import com.sidooo.crawl.UrlStatus;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.senode.MongoConfiguration;
 
-@Service("generator")
-public class Generator extends Configured implements Tool {
+public class SeedGenerator extends Configured implements Tool{
 
-	public static final Logger LOG = LoggerFactory.getLogger("Generator");
-
+	public static final Logger LOG = LoggerFactory.getLogger("SeedGenerator");
+	
 	@Autowired
 	private SeedService seedService;
 
-	public static class ReadyUrlMapper extends
+	public static class UrlMapper extends
 			Mapper<Text, IntWritable, Text, NullWritable> {
 
+		private List<Seed> seeds;
+		
 		@Override
 		public void map(Text key, IntWritable value, Context context)
 				throws IOException, InterruptedException {
 
+			String url = key.toString();
+			
 			UrlStatus status = UrlStatus.valueOf(value.get());
-
-			if (status == UrlStatus.READY) {
-				context.write(key, NullWritable.get());
+			
+			if (status == UrlStatus.FILTERED 
+					&& SeedService.getSeedByUrl(url, seeds) == null) {
+				
+				URI uri;
+				try {
+					uri = new URI(url);
+				} catch (URISyntaxException e) {
+					return;
+				}
+				String seedUrl = uri.getScheme() + uri.getHost();
+				context.write(new Text(seedUrl), NullWritable.get());
 			}
 
 		}
@@ -65,9 +65,24 @@ public class Generator extends Configured implements Tool {
 	public static class ReadyUrlReducer extends
 			Reducer<Text, NullWritable, Text, NullWritable> {
 
+		private SeedService seedService; 
+		
+		@Override
+		public void setup(Context context) throws IOException,
+				InterruptedException {
+
+			@SuppressWarnings("resource")
+			AnnotationConfigApplicationContext appcontext = new AnnotationConfigApplicationContext(
+					MongoConfiguration.class);
+			appcontext.scan("com.sidooo.seed");
+			seedService = appcontext.getBean("seedService", SeedService.class);
+		}
+		
+		
 		protected void reduce(Text key, Iterable<NullWritable> values,
 				Context context) throws IOException, InterruptedException {
-			context.write(key, NullWritable.get());
+			
+			seedService.addRCSeed(key.toString());
 		}
 	}
 
@@ -99,7 +114,7 @@ public class Generator extends Configured implements Tool {
 		TaskData.submitFeedOutput(job);
 
 		// 设置计算流程
-		job.setMapperClass(ReadyUrlMapper.class);
+		job.setMapperClass(UrlMapper.class);
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(IntWritable.class);
 
@@ -146,7 +161,7 @@ public class Generator extends Configured implements Tool {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(
 				MongoConfiguration.class);
 		context.scan("com.sidooo.seed", "com.sidooo.sewing");
-		Generator generator = context.getBean("generator", Generator.class);
+		SeedGenerator generator = context.getBean("seedGenerator", SeedGenerator.class);
 
 		// conf.set("hbase.zookeeper.quorum",
 		// "node4.sidooo.com,node8.sidooo.com,node13.sidooo.com");

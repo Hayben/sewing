@@ -1,6 +1,8 @@
 package com.sidooo.sewing;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configured;
@@ -66,13 +68,24 @@ public class Merger extends Configured implements Tool {
 		job.setJobName("Sewing Merge");
 		job.setJarByClass(Merger.class);
 		
-		Path[] crawlFiles = TaskData.submitCrawlInput(job, date);
+		Path[] crawlFiles;
+		if ("all".equals(date)) {
+			crawlFiles = TaskData.submitCrawlInput(job);
+		} else {
+			crawlFiles = TaskData.submitCrawlInput(job, date);
+		}
+		
 		if (crawlFiles.length <= 0) {
 			LOG.info("Crawl Input File Count : 0");
 			return 1;
 		}
 
-		TaskData.submitCrawlOutput(job, date);
+		if ("all".equals(date)) {
+			TaskData.submitCrawlOutput(job);
+		} else {
+			TaskData.submitCrawlOutput(job, date);
+		}
+		
 
 		job.setMapperClass(MergeMapper.class);
 		job.setMapOutputKeyClass(Text.class);
@@ -90,10 +103,10 @@ public class Merger extends Configured implements Tool {
 			long failCount = group.findCounter("OUTPUT").getValue();
 			System.out.println("OUTPUT Count: " + failCount);
 			
-//			for(Path crawlFile : crawlFiles) {
-//				TaskData.deleteCrawlFile(job, crawlFile);
-//				LOG.info("Delete Crawl File: " + crawlFile.toString());
-//			}
+			for(Path crawlFile : crawlFiles) {
+				TaskData.deleteCrawlFile(job, crawlFile);
+				LOG.info("Delete Crawl File: " + crawlFile.toString());
+			}
 			
 			return 0;
 		} else {
@@ -108,7 +121,7 @@ public class Merger extends Configured implements Tool {
 			return;
 		}
 		
-		if (args[0].length() != 8) { 
+		if (args[0].length() != 8 && args[0].length() != 3) { 
 			System.out.println("Invalid Date Format.");
 			return;
 		}

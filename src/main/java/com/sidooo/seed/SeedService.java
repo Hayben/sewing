@@ -6,13 +6,15 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.sidooo.queue.QueueRepository;
 
 @Service("seedService")
 public class SeedService {
 
 	@Autowired
 	private SeedRepository seedRepo;
+	
+	@Autowired
+	private RCSeedRepository rcSeedRepo;
 
 	public Seed getSeed(String id) {
 		return seedRepo.getSeed(id);
@@ -93,5 +95,25 @@ public class SeedService {
 		}
 		return null;
 	}
+	
+	public Pagination getRCSeedList(int pageNo, int pageSize) {
+		long totalCount = rcSeedRepo.getSeedCount();
+		Pagination page = new Pagination(pageNo, pageSize, totalCount);
+
+		List<RCSeed> seeds = rcSeedRepo.getSeedList(page.getFirstResult(),
+				pageSize);		
+		for (RCSeed seed : seeds) {
+			page.addSeed(seed);
+		}
+
+		return page;
+	}
+
+	public void addRCSeed(String string) {
+		RCSeed seed = new RCSeed();
+		seed.
+		
+	}
+
 
 }

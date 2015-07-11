@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -19,8 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
-import com.sidooo.crawl.FetchContent;
-import com.sidooo.crawl.FetchResult;
 import com.sidooo.crawl.UrlStatus;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
@@ -40,47 +39,10 @@ public class Counter extends Configured implements Tool{
 	public static final LongWritable UPDATE = new LongWritable(3);
 	public static final LongWritable LIMIT	= new LongWritable(4);
 	
-	public static class ReadFetchStatusMapper extends 
-		Mapper<Text, FetchContent, Text, FetchResult> {
-
-		@Override
-		public void map(Text key, FetchContent value, Context context)
-				throws IOException, InterruptedException {
-			
-			FetchResult status = new FetchResult();
-			status.setStatus(value.getStatus());
-			status.setFetchTime(value.getTimeStamp());
-			context.write(key, status);
-		}
-
-	}
-	
-	public static class CalcUrlResultReducer extends 
-		Reducer<Text, FetchResult, Text, LongWritable> {
-
-		@Override
-		public void reduce(Text key, Iterable<FetchResult> values, Context context)
-				throws IOException, InterruptedException {
-			
-			UrlStatus status = UrlStatus.from(values);
-			if (status == UrlStatus.READY) {
-				context.write(key, WAIT);
-			} else if (status == UrlStatus.LATEST){
-				context.write(key, SUCCESS);
-			} else if (status == UrlStatus.FILTERED) {
-				context.write(key, LIMIT);
-			} else if (status == UrlStatus.UNREACHABLE) {
-				context.write(key, FAIL);
-			} else {
-				LOG.info("Unknown Url Status.");
-			}
-		}
-		
-	}
 	
 	//将URL按照种子设置分类
-	public static class ClassifyUrlMapper extends 
-		Mapper<Text, LongWritable, Text, LongWritable> {
+	public static class UrlMapper extends 
+		Mapper<Text, IntWritable, Text, LongWritable> {
 		
 		private List<Seed> seeds;
 
@@ -96,7 +58,7 @@ public class Counter extends Configured implements Tool{
 		}
 
 		@Override
-		public void map(Text key, LongWritable value, Context context)
+		public void map(Text key, IntWritable value, Context context)
 				throws IOException, InterruptedException {
 			
 			String url = key.toString();
@@ -105,8 +67,22 @@ public class Counter extends Configured implements Tool{
 				return;
 			}
 			
-			LOG.info("URL: " + url + ", Seed: " + seed.getId());
-			context.write(new Text(seed.getId()), value);
+			UrlStatus status = UrlStatus.valueOf(value.get());
+			
+			if (status == UrlStatus.READY) {
+				context.write(new Text(seed.getId()), WAIT);
+			} else if (status == UrlStatus.LATEST){
+				context.write(new Text(seed.getId()), SUCCESS);
+			} else if (status == UrlStatus.FILTERED) {
+				context.write(new Text(seed.getId()), LIMIT);
+			} else if (status == UrlStatus.UNREACHABLE) {
+				context.write(new Text(seed.getId()), FAIL);
+			} else {
+				LOG.info("Unknown Url Status.");
+			}
+
+			//LOG.info("URL: " + url + ", Seed: " + seed.getId());
+			
 		}
 		
 		
@@ -158,59 +134,28 @@ public class Counter extends Configured implements Tool{
 		}
 		
 	}
-	
-	private boolean listUrl() throws Exception {
+
+	@Override
+	public int run(String[] args) throws Exception {
+		
 		Job job = new Job(getConf());
-		job.setJobName("Sewing Counter 1");
+		job.setJobName("Sewing Counter");
 		job.setJarByClass(Counter.class);
 
 		TaskData.submitCrawlInput(job);
 
 		TaskData.submitCountOutput(job);
 
-		job.setMapperClass(ReadFetchStatusMapper.class);
+		job.setMapperClass(UrlMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(FetchResult.class);
-		job.setReducerClass(CalcUrlResultReducer.class);
+		job.setMapOutputValueClass(IntWritable.class);
+		job.setReducerClass(CountReducer.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(LongWritable.class);
 		job.setNumReduceTasks(5);
 
 		boolean success = job.waitForCompletion(true);
-		
-		return success;
-	}
-	
-	private boolean countUrl() throws Exception {
-		Job job = new Job(getConf());
-		job.setJobName("Sewing Counter 2");
-		job.setJarByClass(Counter.class);
-		
-		List<Seed> seeds = seedService.getSeeds();
-		CacheSaver.submitSeedCache(job, seeds);
-		TaskData.submitCountInput(job);
-
-		TaskData.submitNullOutput(job);
-
-		job.setMapperClass(ClassifyUrlMapper.class);
-		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(LongWritable.class);
-		job.setReducerClass(CountReducer.class);
-		job.setNumReduceTasks(2);
-
-		return job.waitForCompletion(true);
-	}
-
-	@Override
-	public int run(String[] args) throws Exception {
-		
-		if (listUrl()) {
-			if (countUrl()) {
-				return 0;
-			}
-		}
-
-		return 1;
+		return success ? 0 : 1;
 	}
 	
 	public static void main(String[] args) throws Exception {

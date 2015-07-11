@@ -5,6 +5,7 @@ import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
@@ -30,7 +31,7 @@ public class Crawl extends Configured implements Tool {
 	public static final Logger LOG = LoggerFactory.getLogger("Crawl");
 
 	public static class CrawlMapper extends
-			Mapper<Text, Text, Text, FetchContent> {
+			Mapper<LongWritable, Text, Text, FetchContent> {
 
 		HttpFetcher fetcher;
 		
@@ -41,12 +42,12 @@ public class Crawl extends Configured implements Tool {
 		}
 
 		@Override
-		public void map(Text key, Text value, Context context)
+		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
 
-			FetchContent content = fetcher.fetch(key.toString());
+			FetchContent content = fetcher.fetch(value.toString());
 			
-			LOG.info("Fetch " + key.toString()  
+			LOG.info("Fetch " + value.toString()  
 					+ ", Response:" + content.getStatus()
 					+ ", Size:" + content.getContentSize());
 			if (content.getStatus() == 190) {
@@ -58,7 +59,7 @@ public class Crawl extends Configured implements Tool {
 			} else {
 				context.getCounter("Sewing", "FAIL").increment(1);
 			}
-			context.write(key, content);
+			context.write(value, content);
 		}
 	}
 
@@ -91,7 +92,7 @@ public class Crawl extends Configured implements Tool {
 		job.setJarByClass(Crawl.class);
 
 		// 设置输入
-		TaskData.submitUrlInput(job);
+		TaskData.submitFeedInput(job);
 
 		// 设置输出
 		TaskData.submitCrawlOutput(job);

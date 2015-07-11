@@ -6,7 +6,7 @@ public enum UrlStatus {
 	READY(0),
 	LATEST(1),
 	FILTERED(2),
-	UNREACHABLE(2);
+	UNREACHABLE(3);
 	
 	private int value = 0;
 	
@@ -14,15 +14,31 @@ public enum UrlStatus {
 		this.value = value;
 	}
 	
+	public int getValue() {
+		return value;
+	}
+	
+	public static UrlStatus valueOf(int value) {
+		switch(value) {
+		case 0:
+			return UrlStatus.READY;
+		case 1:
+			return UrlStatus.LATEST;
+		case 2:
+			return UrlStatus.FILTERED;
+		case 3:
+			return UrlStatus.UNREACHABLE;
+		default:
+			return null;
+		}
+	}
+	
+
 	public static final long PERIOD = 15 * 24 * 60 * 60 * 1000;
 	public static final int  RETRY_LIMIT = 3;
 	
 	public static UrlStatus from(Iterable<FetchResult> fetches) {
-		
-		long  lastSuccessTime = 0;
-		long lastFetchTime = 0;
-		boolean hasSuccess = false;
-		boolean hasFiltered = false;
+
 		int retryCount = 0;
 		for(FetchResult it : fetches) {
 			int response = it.getStatus();
@@ -37,7 +53,6 @@ public enum UrlStatus {
 			
 			if (response == 199) {
 				//文件过大
-				hasFiltered = true;
 				return FILTERED;
 			}
 			

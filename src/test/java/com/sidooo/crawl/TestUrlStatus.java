@@ -262,5 +262,14 @@ public class TestUrlStatus {
 		assertEquals(UrlStatus.from(fetches), UrlStatus.LATEST);
 		assertEquals(UrlStatus.from(fetches), UrlStatus.LATEST);
 	}
+	
+	@Test
+	public void test13() {
+		assertEquals(UrlStatus.UNREACHABLE, UrlStatus.valueOf(3));
+		assertEquals(UrlStatus.FILTERED, UrlStatus.valueOf(2));
+		assertEquals(UrlStatus.LATEST, UrlStatus.valueOf(1));
+		assertEquals(UrlStatus.READY, UrlStatus.valueOf(0));
+		assertEquals(null, UrlStatus.valueOf(4));
+	}
 
 }
