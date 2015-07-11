@@ -226,11 +226,8 @@ public class HbaseExtractor extends Configured implements Tool {
 				}
 
 				pointCount ++;
-				
-				
 				seed.incPointCount();
 				//LOG.info(point.toString());
-
 			}
 			
 			extractor.close();
@@ -298,11 +295,11 @@ public class HbaseExtractor extends Configured implements Tool {
 		CacheSaver.submitNlpCache(job);
 
 		// 设置输入
-		TaskData.submitCrawlInput(job);
+		TaskData.submitTestCrawlInput(job);
 
 		// 设置计算流程
 		job.setMapperClass(ExtractMapper.class);
-		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputKeyClass(Keyword.class);
 		job.setMapOutputValueClass(Point.class);
 
 		TableMapReduceUtil.initTableReducerJob("wmouth", ExtractReducer.class,job);

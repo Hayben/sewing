@@ -24,7 +24,12 @@ public class LinkExtractor extends ContentExtractor {
 			return null;
 		}
 		String link = links.get(offset).attr("abs:href");
+		
 		offset ++;
+		int index = link.indexOf("#");
+		if (index >= 0) {
+			link = link.substring(0, index);
+		}
 		return link;
 	}
 

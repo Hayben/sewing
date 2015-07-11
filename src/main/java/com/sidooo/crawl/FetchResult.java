@@ -6,7 +6,7 @@ import java.io.IOException;
 
 import org.apache.hadoop.io.Writable;
 
-public class FetchStatus implements Writable, Comparable<FetchStatus>{
+public class FetchResult implements Writable, Comparable<FetchResult>{
 	
 	private long   fetchTime = System.currentTimeMillis();
 	private long   fetchSize = 0;
@@ -36,8 +36,8 @@ public class FetchStatus implements Writable, Comparable<FetchStatus>{
 		return this.status;
 	}
 	
-	public static FetchStatus read(DataInput in) throws IOException {
-		FetchStatus status = new FetchStatus();
+	public static FetchResult read(DataInput in) throws IOException {
+		FetchResult status = new FetchResult();
 		status.readFields(in);
 		return status;
 	}
@@ -57,7 +57,7 @@ public class FetchStatus implements Writable, Comparable<FetchStatus>{
 	}
 
 	@Override
-	public int compareTo(FetchStatus target) {
+	public int compareTo(FetchResult target) {
 		long thisTime = this.getFetchTime();
 		long targetTime = target.getFetchTime();
 		if (thisTime < targetTime) {

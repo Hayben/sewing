@@ -2,17 +2,24 @@ package com.sidooo.sewing;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -23,7 +30,8 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.stereotype.Service;
 
 import com.sidooo.crawl.FetchContent;
-import com.sidooo.crawl.FetchStatus;
+import com.sidooo.crawl.FetchRecord;
+import com.sidooo.crawl.FetchResult;
 import com.sidooo.crawl.Filter;
 import com.sidooo.crawl.UrlStatus;
 import com.sidooo.extractor.ContentDetector;
@@ -37,13 +45,12 @@ import com.sidooo.senode.MongoConfiguration;
 public class Generator extends Configured implements Tool {
 
 	public static final Logger LOG = LoggerFactory.getLogger("Generator");
-	
+
 	@Autowired
 	private SeedService seedService;
 
-
 	public static class GenerateMapper extends
-			Mapper<Text, FetchContent, Text, FetchStatus> {
+			Mapper<Text, FetchContent, FetchRecord, FetchResult> {
 
 		private List<Seed> seeds;
 
@@ -66,13 +73,13 @@ public class Generator extends Configured implements Tool {
 			extractor.setUrl(url);
 			try {
 				extractor.setInput(input, charset);
-				
-				List<String> links = new ArrayList<String>();
+
+				Set<String> links = new HashSet<String>();
 				String line = null;
-				while( (line = extractor.extract()) != null) {
+				while ((line = extractor.extract()) != null) {
 					links.add(line);
 				}
-				
+
 				return links.toArray(new String[links.size()]);
 			} catch (Exception e) {
 				return null;
@@ -105,10 +112,13 @@ public class Generator extends Configured implements Tool {
 								value.getContent());
 						for (String link : links) {
 							if (filter.accept(link)) {
-								FetchStatus status = new FetchStatus();
+
+								FetchResult status = new FetchResult();
 								status.setStatus(1);
 								status.setFetchTime(value.getTimeStamp());
-								context.write(new Text(link), status);
+								context.write(
+										new FetchRecord(link, value
+												.getTimeStamp()), status);
 							}
 						}
 					}
@@ -123,10 +133,12 @@ public class Generator extends Configured implements Tool {
 								value.getContent());
 						for (String link : links) {
 							if (filter.accept(link)) {
-								FetchStatus status = new FetchStatus();
+								FetchResult status = new FetchResult();
 								status.setStatus(1);
 								status.setFetchTime(value.getTimeStamp());
-								context.write(new Text(link), status);
+								context.write(
+										new FetchRecord(link, value
+												.getTimeStamp()), status);
 							}
 						}
 					}
@@ -134,16 +146,95 @@ public class Generator extends Configured implements Tool {
 			}
 
 			if (filter.accept(url.toString())) {
-				FetchStatus status = new FetchStatus();
+				FetchResult status = new FetchResult();
 				status.setStatus(value.getStatus());
 				status.setFetchTime(value.getTimeStamp());
-				context.write(key, status);
+				context.write(
+						new FetchRecord(key.toString(), value.getTimeStamp()),
+						status);
+			}
+		}
+	}
+
+	public static class UrlPartitioner extends
+			Partitioner<FetchRecord, FetchResult> {
+
+		@Override
+		public int getPartition(FetchRecord key, FetchResult value,
+				int numPartitions) {
+			
+//			LOG.info("Partition URL: " + key.getUrl());
+			URI uri = null;
+			try {
+				uri = new URI(key.getUrl());
+			} catch (URISyntaxException e) {
+				LOG.info("Invalid URL:" + key.getUrl());
+				return 0;
+			}
+			String host = uri.getHost();
+			if (host == null) {
+				LOG.info("Unknown Host:" + host);
+				return 0;
+			}
+			return (host.hashCode() &Integer.MAX_VALUE) % numPartitions;
+		}
+
+	}
+
+	public static class GroupingComparator extends WritableComparator{
+
+		public GroupingComparator() {
+			super(FetchRecord.class, true);
+		}
+		
+		
+		@Override
+		public int compare(WritableComparable a, WritableComparable b) {
+			
+			FetchRecord r1 = (FetchRecord)a;
+			FetchRecord r2 = (FetchRecord)b;
+			
+			String u1 = r1.getUrl();
+			String u2 = r2.getUrl();
+			if (u1.equalsIgnoreCase(u2)) {
+				return 0;
+			} else {
+				return u1.compareToIgnoreCase(u2);
+			}
+		}
+
+
+
+	}
+
+	public static class SortingComparator extends WritableComparator {
+
+		public SortingComparator() {
+			super(FetchRecord.class, true);
+		}
+
+		@Override
+		public int compare(WritableComparable a, WritableComparable b) {
+			FetchRecord r1 = (FetchRecord)a;
+			FetchRecord r2 = (FetchRecord)b;
+			
+			int ret = r1.getUrl().compareToIgnoreCase(r2.getUrl());
+			if (ret != 0) {
+				return ret;
+			} else {
+				long ts1 = r1.getStamp();
+				long ts2 = r2.getStamp();
+				if (ts1 == ts2) {
+					return 0;
+				} else {
+					return ts1 < ts2 ? 1 : -1;
+				}
 			}
 		}
 	}
 
 	public static class GenerateReducer extends
-			Reducer<Text, FetchStatus, Text, Text> {
+			Reducer<FetchRecord, FetchResult, Text, NullWritable> {
 
 		private List<Seed> seeds;
 
@@ -157,27 +248,42 @@ public class Generator extends Configured implements Tool {
 				throw new InterruptedException("Seed List is null.");
 			}
 		}
-		
-		@Override
-		protected void reduce(Text key, Iterable<FetchStatus> values,
-				Context context) throws IOException, InterruptedException {
-			
-			List<FetchStatus> list = new ArrayList<FetchStatus>();
-			for(FetchStatus fetch : values) {
-				list.add(fetch);
+
+		private void printList(Iterable<FetchResult> l) {
+			StringBuilder builder = new StringBuilder();
+			for (FetchResult status : l) {
+				builder.append(status.getFetchTime() + ":" + status.getStatus()
+						+ ",");
 			}
+
+			LOG.info(builder.toString());
+		}
+
+		@Override
+		protected void reduce(FetchRecord key, Iterable<FetchResult> values,
+				Context context) throws IOException, InterruptedException {
+
 			
-			Collections.sort(list);
-			
-			Seed seed = SeedService.getSeedByUrl(key.toString(), seeds);
+			Seed seed = SeedService.getSeedByUrl(key.getUrl(), seeds);
 			if (seed == null) {
 				return;
 			}
 			
+//			printList(values);
+			
+//			List<FetchResult> list = new ArrayList<FetchResult>();
+//			for (FetchResult fetch : values) {
+//				list.add(fetch);
+//			}
+//
+//			Collections.sort(list);
+//			printList(list);
+
 			UrlStatus status = UrlStatus.from(values);
+			LOG.info(key.getUrl() + ":" + status);
 			if (status == UrlStatus.READY) {
 				context.getCounter("Sewing", "URL").increment(1);
-				context.write(key, new Text(seed.getId()));
+				context.write(new Text(key.getUrl()), NullWritable.get());
 			}
 		}
 
@@ -212,11 +318,16 @@ public class Generator extends Configured implements Tool {
 
 		// 设置计算流程
 		job.setMapperClass(GenerateMapper.class);
-		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(FetchStatus.class);
+		job.setMapOutputKeyClass(FetchRecord.class);
+		job.setMapOutputValueClass(FetchResult.class);
+		
+		job.setPartitionerClass(UrlPartitioner.class);
+		job.setGroupingComparatorClass(GroupingComparator.class);
+		job.setSortComparatorClass(SortingComparator.class);
+		
 		job.setReducerClass(GenerateReducer.class);
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Text.class);
+		job.setOutputValueClass(NullWritable.class);
 		job.setNumReduceTasks(30);
 
 		boolean success = job.waitForCompletion(true);

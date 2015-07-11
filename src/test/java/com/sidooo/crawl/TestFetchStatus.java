@@ -22,17 +22,17 @@ public class TestFetchStatus {
 
 	@Test
 	public void test() {
-		List<FetchStatus> list = new ArrayList<FetchStatus>();
+		List<FetchResult> list = new ArrayList<FetchResult>();
 		
-		FetchStatus s1 = new FetchStatus();
+		FetchResult s1 = new FetchResult();
 		s1.setFetchTime(2222);
 		list.add(s1);
 		
-		FetchStatus s2 = new FetchStatus();
+		FetchResult s2 = new FetchResult();
 		s2.setFetchTime(1111);
 		list.add(s2);
 		
-		FetchStatus s3 = new FetchStatus();
+		FetchResult s3 = new FetchResult();
 		s3.setFetchTime(1555);
 		list.add(s3);
 		

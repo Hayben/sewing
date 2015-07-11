@@ -20,7 +20,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.stereotype.Service;
 
 import com.sidooo.crawl.FetchContent;
-import com.sidooo.crawl.FetchStatus;
+import com.sidooo.crawl.FetchResult;
 import com.sidooo.crawl.UrlStatus;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
@@ -41,13 +41,13 @@ public class Counter extends Configured implements Tool{
 	public static final LongWritable LIMIT	= new LongWritable(4);
 	
 	public static class ReadFetchStatusMapper extends 
-		Mapper<Text, FetchContent, Text, FetchStatus> {
+		Mapper<Text, FetchContent, Text, FetchResult> {
 
 		@Override
 		public void map(Text key, FetchContent value, Context context)
 				throws IOException, InterruptedException {
 			
-			FetchStatus status = new FetchStatus();
+			FetchResult status = new FetchResult();
 			status.setStatus(value.getStatus());
 			status.setFetchTime(value.getTimeStamp());
 			context.write(key, status);
@@ -56,10 +56,10 @@ public class Counter extends Configured implements Tool{
 	}
 	
 	public static class CalcUrlResultReducer extends 
-		Reducer<Text, FetchStatus, Text, LongWritable> {
+		Reducer<Text, FetchResult, Text, LongWritable> {
 
 		@Override
-		public void reduce(Text key, Iterable<FetchStatus> values, Context context)
+		public void reduce(Text key, Iterable<FetchResult> values, Context context)
 				throws IOException, InterruptedException {
 			
 			UrlStatus status = UrlStatus.from(values);
@@ -170,7 +170,7 @@ public class Counter extends Configured implements Tool{
 
 		job.setMapperClass(ReadFetchStatusMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(FetchStatus.class);
+		job.setMapOutputValueClass(FetchResult.class);
 		job.setReducerClass(CalcUrlResultReducer.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(LongWritable.class);

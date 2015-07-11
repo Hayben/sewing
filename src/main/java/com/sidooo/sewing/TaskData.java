@@ -17,8 +17,10 @@ import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,8 +70,11 @@ public class TaskData {
 			throw new Exception("urls.txt not found.");
 		}
 
-		SequenceFileInputFormat.addInputPath(job, urlFile);
-		job.setInputFormatClass(SequenceFileInputFormat.class);
+//		SequenceFileInputFormat.addInputPath(job, urlFile);
+//		job.setInputFormatClass(SequenceFileInputFormat.class);
+		
+		TextInputFormat.addInputPath(job, urlFile);
+		job.setInputFormatClass(TextInputFormat.class);
 	}
 
 	public static Path submitUrlOutput(Job job) throws IOException {
@@ -80,13 +85,15 @@ public class TaskData {
 			hdfs.delete(urlFile);
 		}
 
-		job.setOutputFormatClass(SequenceFileOutputFormat.class);
-		SequenceFileOutputFormat.setOutputPath(job, urlFile);
-		SequenceFileOutputFormat.setCompressOutput(job, true);
-		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
-		SequenceFileOutputFormat.setOutputCompressionType(job,
-				CompressionType.RECORD);
-		
+//		job.setOutputFormatClass(SequenceFileOutputFormat.class);
+//		SequenceFileOutputFormat.setOutputPath(job, urlFile);
+//		SequenceFileOutputFormat.setCompressOutput(job, true);
+//		SequenceFileOutputFormat.setOutputCompressorClass(job, SnappyCodec.class);
+//		SequenceFileOutputFormat.setOutputCompressionType(job,
+//				CompressionType.RECORD);
+
+		job.setOutputFormatClass(TextOutputFormat.class);
+		TextOutputFormat.setOutputPath(job, urlFile);
 		return urlFile;
 	}
 
@@ -168,7 +175,7 @@ public class TaskData {
 		hdfs.delete(crawlFile);
 	}
 	
-	public static int SubmitTestCrawlInput(Job job) throws Exception {
+	public static int submitTestCrawlInput(Job job) throws Exception {
 		FileSystem hdfs = FileSystem.get(job.getConfiguration());
 
 		Path crawlDir = new Path("/sewing/crawl");
@@ -182,10 +189,13 @@ public class TaskData {
 		job.setInputFormatClass(SequenceFileInputFormat.class);
 		
 		int count = 0;
-		Path testFile = new Path("/sewing/crawl/201507050006.sequence");
+		Path testFile = new Path("/sewing/crawl/201507080437.sequence");
 		LOG.info("Submit Crawl Input File: " + testFile.getName());
 		SequenceFileInputFormat.addInputPath(job, testFile);
-		
+		SequenceFileInputFormat.addInputPath(job, 
+				new Path("/sewing/crawl/201507080420.sequence"));
+		SequenceFileInputFormat.addInputPath(job, 
+				new Path("/sewing/crawl/201507080433.sequence"));
 		return count;	
 	}
 
