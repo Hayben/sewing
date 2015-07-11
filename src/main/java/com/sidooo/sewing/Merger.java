@@ -1,6 +1,7 @@
 package com.sidooo.sewing;
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -30,8 +31,11 @@ public class Merger extends Configured implements Tool {
 		@Override
 		public void map(Text key, FetchContent value, Context context)
 				throws IOException, InterruptedException {
-			context.write(key, value);
+			
 			context.getCounter("Sewing", "INPUT").increment(1);
+			if (value.getStatus() == 200) {
+				context.write(key, value);
+			}
 		}
 	}
 
@@ -41,8 +45,10 @@ public class Merger extends Configured implements Tool {
 		@Override
 		public void reduce(Text key, Iterable<FetchContent> values,
 				Context context) throws IOException, InterruptedException {
-			for (FetchContent value : values) {
-				context.write(key, value);
+			Iterator<FetchContent> it = values.iterator();
+			if (it.hasNext()) {
+				FetchContent content = it.next();
+				context.write(key, content);
 				context.getCounter("Sewing", "OUTPUT").increment(1);
 			}
 		}
@@ -84,10 +90,10 @@ public class Merger extends Configured implements Tool {
 			long failCount = group.findCounter("OUTPUT").getValue();
 			System.out.println("OUTPUT Count: " + failCount);
 			
-			for(Path crawlFile : crawlFiles) {
-				TaskData.deleteCrawlFile(job, crawlFile);
-				LOG.info("Delete Crawl File: " + crawlFile.toString());
-			}
+//			for(Path crawlFile : crawlFiles) {
+//				TaskData.deleteCrawlFile(job, crawlFile);
+//				LOG.info("Delete Crawl File: " + crawlFile.toString());
+//			}
 			
 			return 0;
 		} else {
