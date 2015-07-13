@@ -88,7 +88,7 @@ public class HbaseExtractor extends Configured implements Tool {
 			}
 			for(Seed seed : seeds) {
 				seed.setPointCount(0);
-				seed.setPointCount(0);
+				seed.setLinkCount(0);
 			}
 			
 			recognition = new Recognition();
@@ -111,6 +111,7 @@ public class HbaseExtractor extends Configured implements Tool {
 			context.getCounter("Sewing", "ERR_INPUT").increment(errInput);
 			context.getCounter("Sewing", "ERR_NOKEYWORD").increment(errNoKeyword);
 			context.getCounter("Sewing", "ERR_RECOGNITE").increment(errRecognite);
+			context.getCounter("Sewing", "ERR_TINYKEY").increment(errTinyKey);
 			
 			for(Seed seed : seeds) {
 				seedService.incAnalysisStatistics(seed.getId(), seed.getPointCount(), seed.getLinkCount());
@@ -261,12 +262,13 @@ public class HbaseExtractor extends Configured implements Tool {
 				
 				Put putPoint = new Put(Bytes.toBytes(keyword.hash()));
 				putPoint.add(Bytes.toBytes("points"),
-						Bytes.toBytes("point"), Bytes.toBytes(gson.toJson(point)));
+						Bytes.toBytes(point.getDocId()), 
+						Bytes.toBytes(gson.toJson(point)));
 				context.write(null, putPoint);
 				
 				Put putKeyword = new Put(Bytes.toBytes(point.getDocId()));
 				putKeyword.add(Bytes.toBytes("keywords"),
-						Bytes.toBytes("keyword"), Bytes.toBytes(gson.toJson(keyword)));
+						Bytes.toBytes(keyword.hash()), Bytes.toBytes(gson.toJson(keyword)));
 				context.write(null, putKeyword);
 			}
 		}
@@ -295,7 +297,7 @@ public class HbaseExtractor extends Configured implements Tool {
 		CacheSaver.submitNlpCache(job);
 
 		// 设置输入
-		TaskData.submitCrawlInput(job);
+		TaskData.submitTestCrawlInput(job);
 
 		// 设置计算流程
 		job.setMapperClass(ExtractMapper.class);
@@ -303,7 +305,7 @@ public class HbaseExtractor extends Configured implements Tool {
 		job.setMapOutputValueClass(Point.class);
 
 		TableMapReduceUtil.initTableReducerJob("wmouth", ExtractReducer.class,job);
-		TaskData.submitNullOutput(job);
+		//TaskData.submitNullOutput(job);
 		job.setNumReduceTasks(20);
 		
 		boolean success = job.waitForCompletion(true);
@@ -350,8 +352,10 @@ public class HbaseExtractor extends Configured implements Tool {
 		HTableDescriptor table = new HTableDescriptor("wmouth");
 		HColumnDescriptor columnPoint = new HColumnDescriptor(
 				"points".getBytes());
+		columnPoint.setMaxVersions(1);
 		HColumnDescriptor columnLink = new HColumnDescriptor(
 				"keywords".getBytes());
+		columnLink.setMaxVersions(1);
 		table.addFamily(columnPoint);
 		table.addFamily(columnLink);
 		hbase.createTable(table);

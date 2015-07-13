@@ -65,10 +65,15 @@ public class Generator extends Configured implements Tool {
 	public static class ReadyUrlReducer extends
 			Reducer<Text, NullWritable, Text, NullWritable> {
 
+		private int count = 0;
+		
 		protected void reduce(Text key, Iterable<NullWritable> values,
 				Context context) throws IOException, InterruptedException {
-			context.write(key, NullWritable.get());
-			context.getCounter("Sewing", "FEED").increment(1);
+			if (count <= 50000) {
+				context.write(key, NullWritable.get());
+				count ++;
+				context.getCounter("Sewing", "FEED").increment(1);
+			}
 		}
 	}
 

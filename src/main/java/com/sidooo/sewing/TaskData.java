@@ -189,13 +189,13 @@ public class TaskData {
 		job.setInputFormatClass(SequenceFileInputFormat.class);
 		
 		int count = 0;
-		Path testFile = new Path("/sewing/crawl/201507080437.sequence");
+		Path testFile = new Path("/sewing/crawl/201507112043.sequence");
 		LOG.info("Submit Crawl Input File: " + testFile.getName());
 		SequenceFileInputFormat.addInputPath(job, testFile);
-		SequenceFileInputFormat.addInputPath(job, 
-				new Path("/sewing/crawl/201507080420.sequence"));
-		SequenceFileInputFormat.addInputPath(job, 
-				new Path("/sewing/crawl/201507080433.sequence"));
+//		SequenceFileInputFormat.addInputPath(job, 
+//				new Path("/sewing/crawl/201507080420.sequence"));
+//		SequenceFileInputFormat.addInputPath(job, 
+//				new Path("/sewing/crawl/201507080433.sequence"));
 		return count;	
 	}
 

@@ -23,19 +23,26 @@ public class Point2Service {
 		
 		//一度
 		List<Point2> points = repo.getPoints(word);
+		if (points == null || points.size() <= 0) {
+			return null;
+		}
 		System.out.println("Point Count:" + points.size());
 		for(Point2 point : points) {
 			graph.addNode(new PointNode(point));
-			graph.addEdge(new Edge(point.getDocId(), word));
+//			graph.addEdge(new Edge(point.getDocId(), word));
 			
 			List<Keyword> keywords = repo.getKeywords(point.getDocId());
 			System.out.println("Keyword Count:" + keywords.size());
 			for(Keyword keyword: keywords) {
+				if (graph.existNode(keyword.getWord())) {
+					continue;
+				}
 				graph.addNode(new KeywordNode(keyword));
 				graph.addEdge(new Edge(point.getDocId(), keyword.getWord()));
 			}
-
 		}
+		
+		System.out.println(graph.toString());
 		
 		//二度
 		Edge[] edges = graph.edgeIterator();
@@ -44,13 +51,22 @@ public class Point2Service {
 				continue;
 			}
 			points = repo.getPoints(edge.to());
+			
 			for(Point2 point : points) {
+				
+				if (graph.existNode(point.getDocId())) {
+					continue;
+				}
 				graph.addNode(new PointNode(point));
 				graph.addEdge(new Edge(point.getDocId(), edge.to()));
 				
 				List<Keyword> keywords = repo.getKeywords(point.getDocId());
 				
 				for(Keyword keyword : keywords) {
+					if (graph.existNode(keyword.getWord())) {
+						continue;
+					}
+
 					graph.addNode(new KeywordNode(keyword));
 					graph.addEdge(new Edge(point.getDocId(), keyword.getWord()));
 				}

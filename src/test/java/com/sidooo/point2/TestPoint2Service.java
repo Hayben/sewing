@@ -35,6 +35,12 @@ public class TestPoint2Service {
 	@After
 	public void tearDown() throws Exception {
 	}
+	
+	@Test
+	public void testKeywordNotExist() throws IOException {
+		Graph graph = pointService.getGraph("notexistkey");
+		assertEquals(graph, null);
+	}
 
 	@Test
 	public void test() throws IOException {

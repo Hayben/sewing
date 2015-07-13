@@ -50,4 +50,14 @@ public class Graph {
 		
 	}
 
+	public boolean existNode(String docId) {
+		for (Node node : nodes) {
+			if (node.id.equals(docId)) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
 }

@@ -34,7 +34,8 @@ public class Point2Repository {
 
 		String keyHash = Keyword.hash(word);
 		Get get = new Get(Bytes.toBytes(keyHash));
-		get.addColumn(Bytes.toBytes("points"), Bytes.toBytes("point"));
+		get.addFamily(Bytes.toBytes("points"));
+		//get.addColumn(Bytes.toBytes("points"), Bytes.toBytes("point"));
 
 		Result result;
 		try {
@@ -42,8 +43,8 @@ public class Point2Repository {
 		} catch (IOException e) {
 			return null;
 		}
-		List<Cell> cells = result.listCells();
-		for (Cell cell : cells) {
+		
+		for (Cell cell :result.rawCells()) {
 			String jsonPoint = Bytes.toString(cell.getValue());
 			Point2 point = gson.fromJson(jsonPoint, Point2.class);
 			points.add(point);
@@ -57,7 +58,7 @@ public class Point2Repository {
 		List<Keyword> keywords = new ArrayList<Keyword>();
 
 		Get get = new Get(Bytes.toBytes(pointId));
-		get.addColumn(Bytes.toBytes("keywords"), Bytes.toBytes("keyword"));
+		get.addFamily(Bytes.toBytes("keywords"));
 
 		Result result;
 		try {
@@ -65,8 +66,7 @@ public class Point2Repository {
 		} catch (IOException e) {
 			return null;
 		}
-		List<Cell> cells = result.listCells();
-		for (Cell cell : cells) {
+		for (Cell cell : result.rawCells()) {
 			String jsonKeyword = Bytes.toString(cell.getValue());
 			Keyword keyword = gson.fromJson(jsonKeyword, Keyword.class);
 			keywords.add(keyword);
@@ -77,11 +77,11 @@ public class Point2Repository {
 
 	public void addKeyword(Keyword keyword, Point2 point) throws IOException {
 		Put putPoint = new Put(Bytes.toBytes(keyword.hash()));
-		putPoint.add(Bytes.toBytes("points"), Bytes.toBytes("point"),
+		putPoint.add(Bytes.toBytes("points"), Bytes.toBytes(point.getDocId()),
 				Bytes.toBytes(gson.toJson(point)));
 		htable.put(putPoint);
 		Put putKeyword = new Put(Bytes.toBytes(point.getDocId()));
-		putKeyword.add(Bytes.toBytes("keywords"), Bytes.toBytes("keyword"),
+		putKeyword.add(Bytes.toBytes("keywords"), Bytes.toBytes(keyword.hash()),
 				Bytes.toBytes(gson.toJson(keyword)));
 		htable.put(putKeyword);
 	}
