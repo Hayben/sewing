@@ -114,6 +114,12 @@ public class Crawl extends Configured implements Tool {
 		conf.setInt("mapreduce.map.cpu.vcores", VCORE_COUNT);
 		LOG.info("mapreduce.map.cpu.vcores : " + getConf().getInt("mapreduce.map.cpu.vcores", 1));
 		
+		conf.set("mapreduce.map.memory.mb", "1300");
+		LOG.info("mapreduce.map.memory.mb : " + getConf().get("mapreduce.map.memory.mb"));
+		
+		conf.set("mapreduce.map.java.opts.max.heap", "1100");
+		LOG.info("mapreduce.map.java.opts.max.heap : " + getConf().get("mapreduce.map.java.opts.max.heap"));
+		
 		Job job = new Job(getConf());
 		job.setJobName("Sewing Crawl");
 		job.setJarByClass(Crawl.class);
@@ -127,7 +133,7 @@ public class Crawl extends Configured implements Tool {
 		// 设置分布式计算流程
 		job.setMapperClass(MultithreadedMapper.class);
 		MultithreadedMapper.setMapperClass(job, CrawlMapper.class);
-		MultithreadedMapper.setNumberOfThreads(job, VCORE_COUNT * 4);
+		MultithreadedMapper.setNumberOfThreads(job, VCORE_COUNT * 8);
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(FetchContent.class);
 		
