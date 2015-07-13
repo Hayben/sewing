@@ -1,6 +1,5 @@
 package com.sidooo.seed;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,9 +12,6 @@ public class SeedService {
 	@Autowired
 	private SeedRepository seedRepo;
 	
-	@Autowired
-	private RCSeedRepository rcSeedRepo;
-
 	public Seed getSeed(String id) {
 		return seedRepo.getSeed(id);
 	}
@@ -31,8 +27,11 @@ public class SeedService {
 		return newSeed;
 	}
 
-	public void deleteSeed(String id) {
+	public void deleteSeed(String id) throws Exception {
 		Seed seed = seedRepo.getSeed(id);
+		if (seed == null) {
+			throw new Exception("Seed not found");
+		}
 		seedRepo.deleteSeed(id);
 	}
 
@@ -43,6 +42,7 @@ public class SeedService {
 	public List<Seed> getSeeds() {
 		return seedRepo.getSeeds();
 	}
+	
 
 	public List<Seed> getEnabledSeeds() {
 		return seedRepo.getEnabledSeeds();
@@ -89,6 +89,9 @@ public class SeedService {
 
 	public static Seed getSeedByUrl(String url, List<Seed> seeds) {
 		for (Seed seed : seeds) {
+			if (seed.getUrl() == null) {
+				continue;
+			}
 			if (url.toLowerCase().startsWith(seed.getUrl().toLowerCase())) {
 				return seed;
 			}
@@ -96,24 +99,15 @@ public class SeedService {
 		return null;
 	}
 	
-	public Pagination getRCSeedList(int pageNo, int pageSize) {
-		long totalCount = rcSeedRepo.getSeedCount();
+	public Pagination getSeeds(int pageNo, int pageSize) {
+		long totalCount = seedRepo.getSeedCount();
 		Pagination page = new Pagination(pageNo, pageSize, totalCount);
 
-		List<RCSeed> seeds = rcSeedRepo.getSeedList(page.getFirstResult(),
-				pageSize);		
-		for (RCSeed seed : seeds) {
+		List<Seed> seeds = seedRepo.getSeeds(page.getFirstResult(), pageSize);		
+		for (Seed seed : seeds) {
 			page.addSeed(seed);
 		}
 
 		return page;
 	}
-
-	public void addRCSeed(String string) {
-		RCSeed seed = new RCSeed();
-		seed.
-		
-	}
-
-
 }

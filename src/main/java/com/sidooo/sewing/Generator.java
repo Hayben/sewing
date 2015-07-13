@@ -68,6 +68,7 @@ public class Generator extends Configured implements Tool {
 		protected void reduce(Text key, Iterable<NullWritable> values,
 				Context context) throws IOException, InterruptedException {
 			context.write(key, NullWritable.get());
+			context.getCounter("Sewing", "FEED").increment(1);
 		}
 	}
 
@@ -91,9 +92,7 @@ public class Generator extends Configured implements Tool {
 		CacheSaver.submitSeedCache(job, seeds);
 
 		// 设置输入的数据源
-		TaskData.submitSeedInput(job, seeds);
-		Path[] crawlFiles = TaskData.submitCrawlInput(job);
-		LOG.info("Crawl File Count: " + crawlFiles.length);
+		TaskData.submitUrldbInput(job);
 
 		// 设置输出
 		TaskData.submitFeedOutput(job);
@@ -101,18 +100,18 @@ public class Generator extends Configured implements Tool {
 		// 设置计算流程
 		job.setMapperClass(ReadyUrlMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(IntWritable.class);
+		job.setMapOutputValueClass(NullWritable.class);
 
 		job.setReducerClass(ReadyUrlReducer.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(NullWritable.class);
-		job.setNumReduceTasks(30);
+		job.setNumReduceTasks(35);
 
 		boolean success = job.waitForCompletion(true);
 		if (success) {
 			CounterGroup group = job.getCounters().getGroup("Sewing");
-			long urlCount = group.findCounter("URL").getValue();
-			System.out.println("URL Count: " + urlCount);
+			long urlCount = group.findCounter("FEED").getValue();
+			System.out.println("Feed Count: " + urlCount);
 			return 0;
 		} else {
 			return 1;

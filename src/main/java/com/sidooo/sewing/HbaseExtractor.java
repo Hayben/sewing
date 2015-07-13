@@ -295,7 +295,7 @@ public class HbaseExtractor extends Configured implements Tool {
 		CacheSaver.submitNlpCache(job);
 
 		// 设置输入
-		TaskData.submitTestCrawlInput(job);
+		TaskData.submitCrawlInput(job);
 
 		// 设置计算流程
 		job.setMapperClass(ExtractMapper.class);
@@ -304,7 +304,7 @@ public class HbaseExtractor extends Configured implements Tool {
 
 		TableMapReduceUtil.initTableReducerJob("wmouth", ExtractReducer.class,job);
 		TaskData.submitNullOutput(job);
-		job.setNumReduceTasks(15);
+		job.setNumReduceTasks(20);
 		
 		boolean success = job.waitForCompletion(true);
 		if (success) {
@@ -340,29 +340,26 @@ public class HbaseExtractor extends Configured implements Tool {
 				+ conf.get("hbase.zookeeper.quorum"));
 
 		HBaseAdmin hbase = new HBaseAdmin(conf);
-
-		if (!hbase.tableExists("wmouth")) {
-			LOG.info("Create HBase Table: crawl");
-			HTableDescriptor table = new HTableDescriptor("wmouth");
-			HColumnDescriptor column = new HColumnDescriptor(
-					"content".getBytes());
-
-			table.addFamily(column);
-			hbase.createTable(table);
-
-			LOG.info("Create HBase Table wmouth successful.");
-		} else {
-			HTableDescriptor table = hbase.getTableDescriptor("wmouth"
-					.getBytes());
-
-			if (!table.hasFamily("content".getBytes())) {
-				HColumnDescriptor column = new HColumnDescriptor(
-						"content".getBytes());
-				table.addFamily(column);
-
-				LOG.info("Add Column Family: keywords");
-			}
+		if (hbase.tableExists("wmouth")) {
+			hbase.disableTable("wmouth");
+			hbase.deleteTable("wmouth");
 		}
+		
+
+		LOG.info("Create HBase Table: wmouth");
+		HTableDescriptor table = new HTableDescriptor("wmouth");
+		HColumnDescriptor columnPoint = new HColumnDescriptor(
+				"points".getBytes());
+		HColumnDescriptor columnLink = new HColumnDescriptor(
+				"keywords".getBytes());
+		table.addFamily(columnPoint);
+		table.addFamily(columnLink);
+		hbase.createTable(table);
+
+		LOG.info("Create HBase Table wmouth successful.");
+
+		
+		
 
 		hbase.close();
 

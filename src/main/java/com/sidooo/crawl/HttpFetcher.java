@@ -4,12 +4,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
@@ -29,9 +31,9 @@ public class HttpFetcher extends Fetcher{
     
     private final int BUFFER_SIZE = 32 * 1024;
     
-    private final int CONN_TIMEOUT = 10000;
+    private final int CONN_TIMEOUT = 5000;
     
-    private final int READ_TIMEOUT = 90000;
+    private final int READ_TIMEOUT = 60000;
 	
 	public HttpFetcher() {
 		client = new DefaultHttpClient();
@@ -41,21 +43,18 @@ public class HttpFetcher extends Fetcher{
 	public FetchContent fetch(String address) {
 		
 		FetchContent content = new FetchContent();
-		URL url;
+		URI url;
+
 		try {
-			url = new URL(address);
-		} catch (MalformedURLException e1) {
+			url = new URI(address);
+		} catch (URISyntaxException e) {
 			content.setStatus(190);
 			return content;
 		}
-		
+
 		HttpGet http;
-		try {
-			http = new HttpGet(url.toURI());
-		} catch (URISyntaxException e1) {
-			content.setStatus(191);
-			return content;
-		}
+		http = new HttpGet(url);
+
 		http.addHeader("Accept", "text/html,application/xhtml+xml,application/xml,application/pdf;q=0.9,*/*;q=0.8");  
 		http.addHeader("Connection", "Keep-Alive");  
 		http.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0");  
@@ -83,6 +82,11 @@ public class HttpFetcher extends Fetcher{
 			} catch (IOException e) {
 				//连接错误
 				content.setStatus(198);
+				return content;
+			} catch(IllegalStateException e) {
+				System.out.println(address);
+				System.out.println(url.toString());
+				content.setStatus(191);
 				return content;
 			}
             

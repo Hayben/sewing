@@ -1,8 +1,11 @@
 package com.sidooo.point2;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,11 +23,13 @@ public class Point2Service {
 		
 		//一度
 		List<Point2> points = repo.getPoints(word);
+		System.out.println("Point Count:" + points.size());
 		for(Point2 point : points) {
 			graph.addNode(new PointNode(point));
 			graph.addEdge(new Edge(point.getDocId(), word));
 			
 			List<Keyword> keywords = repo.getKeywords(point.getDocId());
+			System.out.println("Keyword Count:" + keywords.size());
 			for(Keyword keyword: keywords) {
 				graph.addNode(new KeywordNode(keyword));
 				graph.addEdge(new Edge(point.getDocId(), keyword.getWord()));
@@ -33,9 +38,8 @@ public class Point2Service {
 		}
 		
 		//二度
-		Iterator<Edge>  itEdge = graph.edgeIterator();
-		while(itEdge.hasNext()) {
-			Edge edge = itEdge.next();
+		Edge[] edges = graph.edgeIterator();
+		for(Edge edge : edges){
 			if (edge.to().equals(word)) {
 				continue;
 			}
@@ -55,5 +59,11 @@ public class Point2Service {
 		
 		return graph;
 		
+	}
+	
+	public void addPoint(Point2 point, List<Keyword> keywords) throws IOException {
+		for(Keyword keyword : keywords) {
+			repo.addKeyword(keyword, point);
+		}
 	}
 }

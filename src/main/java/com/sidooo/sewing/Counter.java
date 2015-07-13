@@ -142,13 +142,19 @@ public class Counter extends Configured implements Tool{
 		job.setJobName("Sewing Counter");
 		job.setJarByClass(Counter.class);
 
-		TaskData.submitCrawlInput(job);
+		List<Seed> seeds = seedService.getEnabledSeeds();
+		if (seeds.size() <= 0) {
+			System.out.println("Seed Count is 0.");
+			return 1;
+		}
+		CacheSaver.submitSeedCache(job, seeds);
+		TaskData.submitUrldbInput(job);
 
 		TaskData.submitCountOutput(job);
 
 		job.setMapperClass(UrlMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(IntWritable.class);
+		job.setMapOutputValueClass(LongWritable.class);
 		job.setReducerClass(CountReducer.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(LongWritable.class);

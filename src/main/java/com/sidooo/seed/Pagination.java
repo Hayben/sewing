@@ -19,7 +19,7 @@ public class Pagination {
 	
 	private int totalPage;
 	
-	private List<RCSeed> seeds = new ArrayList<RCSeed>();
+	private List<Seed> seeds = new ArrayList<Seed>();
 	
 	public Pagination(int pageNo, int pageSize, long totalCount) {
 		this.pageNo = pageNo;
@@ -43,8 +43,28 @@ public class Pagination {
 		return this.pageNo * this.pageSize;
 	}
 	
-	public void addSeed(RCSeed seed) {
+	public void addSeed(Seed seed) {
 		seeds.add(seed);
+	}
+	
+	public int getPageNo() {
+		return this.pageNo;
+	}
+	
+	public int getPageSize() {
+		return this.pageSize;
+	}
+	
+	public long getTotalCount() {
+		return this.totalCount;
+	}
+	
+	public int getTotalPage() {
+		return this.totalPage;
+	}
+	
+	public List<Seed> getSeeds() {
+		return this.seeds;
 	}
 	
 }

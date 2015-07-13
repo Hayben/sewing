@@ -33,6 +33,7 @@ public class LinkExtractor extends ContentExtractor {
 		return link;
 	}
 
+
 	@Override
 	public void close() {
 		if (doc != null) {

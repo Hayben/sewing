@@ -98,6 +98,9 @@ public class ContentDetector {
          if (attr != null) {
         	 ContentType result = new ContentType();
         	 MediaType type = MediaType.parse(attr);
+        	 if (type == null) {
+        		 return null;
+        	 }
         	 result.charset = type.getParameters().get("charset");
         	 if (result.charset != null) {
         		 result.charset = result.charset.toLowerCase();

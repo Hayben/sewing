@@ -95,35 +95,41 @@ public class UrlDatabase extends Configured implements Tool {
 		protected void map(Text key, FetchContent value, Context context)
 				throws IOException, InterruptedException {
 
-			URL url = new URL(key.toString());
+			String url = key.toString();
 			LOG.info("Url: " + key.toString() + ",Charset: "
 					+ value.getContentCharset());
-			if (value.getStatus() == 200) {
+			if (value.getStatus() == 200 && value.getContent() != null) {
 				String contentType = value.getContentType();
 				if (contentType == null || contentType.length() <= 0) {
 					// ContentType存在Body中
 					ContentDetector detector = new ContentDetector();
 					ContentType type = detector.detect(value.getContent());
-					if ("text/html".equals(type.mime)) {
+					if (type != null) {
+						if ("text/html".equals(type.mime)) {
 
-						String charset = type.charset;
-						if (charset.length() <= 0) {
-							charset = "utf-8";
-						}
-						String[] links = getLinks(url.toString(), charset,
-								value.getContent());
-						for (String link : links) {
-							if (filter.accept(link)) {
-
-								FetchResult status = new FetchResult();
-								status.setStatus(1);
-								status.setFetchTime(value.getTimeStamp());
-								context.write(
-										new FetchRecord(link, value
-												.getTimeStamp()), status);
+							String charset = type.charset;
+							if (charset.length() <= 0) {
+								charset = "utf-8";
 							}
+							String[] links = getLinks(url, charset,
+									value.getContent());
+							if (links != null) {
+								for (String link : links) {
+									if (filter.accept(link)) {
+
+										FetchResult status = new FetchResult();
+										status.setStatus(1);
+										status.setFetchTime(value.getTimeStamp());
+										context.write(
+												new FetchRecord(link, value
+														.getTimeStamp()), status);
+									}
+								}
+							}
+
 						}
 					}
+
 				} else {
 					// ContentType存在Response Header中
 					if (contentType.equalsIgnoreCase("text/html")) {
@@ -131,23 +137,26 @@ public class UrlDatabase extends Configured implements Tool {
 						if (charset == null || charset.length() <= 0) {
 							charset = "utf-8";
 						}
-						String[] links = getLinks(url.toString(), charset,
+						String[] links = getLinks(url, charset,
 								value.getContent());
-						for (String link : links) {
-							if (filter.accept(link)) {
-								FetchResult status = new FetchResult();
-								status.setStatus(1);
-								status.setFetchTime(value.getTimeStamp());
-								context.write(
-										new FetchRecord(link, value
-												.getTimeStamp()), status);
+						if (links != null) {
+							for (String link : links) {
+								if (filter.accept(link)) {
+									FetchResult status = new FetchResult();
+									status.setStatus(1);
+									status.setFetchTime(value.getTimeStamp());
+									context.write(
+											new FetchRecord(link, value
+													.getTimeStamp()), status);
+								}
 							}
 						}
+
 					}
 				}
 			}
 
-			if (filter.accept(url.toString())) {
+			if (filter.accept(url)) {
 				FetchResult status = new FetchResult();
 				status.setStatus(value.getStatus());
 				status.setFetchTime(value.getTimeStamp());
@@ -173,12 +182,13 @@ public class UrlDatabase extends Configured implements Tool {
 				LOG.info("Invalid URL:" + key.getUrl());
 				return 0;
 			}
-			String host = uri.getHost();
-			if (host == null) {
-				LOG.info("Unknown Host:" + host);
-				return 0;
-			}
-			return (host.hashCode() &Integer.MAX_VALUE) % numPartitions;
+			return (uri.toString().toLowerCase().hashCode() & Integer.MAX_VALUE) % numPartitions;
+//			String host = uri.getHost();
+//			if (host == null) {
+//				LOG.info("Unknown Host:" + host);
+//				return 0;
+//			}
+//			return (host.hashCode() &Integer.MAX_VALUE) % numPartitions;
 		}
 
 	}
@@ -236,6 +246,11 @@ public class UrlDatabase extends Configured implements Tool {
 			Reducer<FetchRecord, FetchResult, Text, IntWritable> {
 
 		private List<Seed> seeds;
+		
+		private long readyCount = 0;
+		private long unreachableCount = 0;
+		private long latestCount = 0;
+		private long filteredCount = 0;
 
 		@Override
 		public void setup(Context context) throws IOException,
@@ -280,12 +295,32 @@ public class UrlDatabase extends Configured implements Tool {
 //
 //			Collections.sort(list);
 //			printList(list);
-
 			
-			LOG.info(key.getUrl() + ":" + status);
+			if (status == UrlStatus.FILTERED) {
+				filteredCount ++;
+			} else if (status == UrlStatus.LATEST) {
+				latestCount ++;
+			} else if (status == UrlStatus.READY) {
+				readyCount ++;
+			} else if (status == UrlStatus.UNREACHABLE) {
+				unreachableCount ++;
+			} else {
+			}
+			//LOG.info(key.getUrl() + ":" + status);
+			
 			context.write(new Text(key.getUrl()), new IntWritable(status.getValue()));
 			
-			context.getCounter("Sewing", "URL").increment(1);
+			context.getCounter("Sewing", "URL_TOTAL").increment(1);
+		}
+		
+		@Override
+		public void cleanup(Context context) throws IOException,
+				InterruptedException {
+			
+			context.getCounter("Sewing", "URL_FILTERED").increment(filteredCount);
+			context.getCounter("Sewing", "URL_LATEST").increment(latestCount);
+			context.getCounter("Sewing", "URL_READY").increment(readyCount);
+			context.getCounter("Sewing", "URL_UNREACHABLE").increment(unreachableCount);
 		}
 
 	}
@@ -296,7 +331,7 @@ public class UrlDatabase extends Configured implements Tool {
 		// LOG.info("ZooKeeper:" + getConf().get("hbase.zookeeper.quorum"));
 
 		Job job = new Job(getConf());
-		job.setJobName("Sewing Generator");
+		job.setJobName("Sewing UrlDatabase");
 		job.setJarByClass(Generator.class);
 
 		// 设置缓存
@@ -329,13 +364,16 @@ public class UrlDatabase extends Configured implements Tool {
 		job.setReducerClass(FetchResultReducer.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(IntWritable.class);
-		job.setNumReduceTasks(1);
+		job.setNumReduceTasks(30);
 
 		boolean success = job.waitForCompletion(true);
 		if (success) {
 			CounterGroup group = job.getCounters().getGroup("Sewing");
-			long urlCount = group.findCounter("URL").getValue();
-			System.out.println("URL Count: " + urlCount);
+			System.out.println("URL Latest:" + group.findCounter("URL_LATEST").getValue());
+			System.out.println("URL Ready:" + group.findCounter("URL_READY").getValue());
+			System.out.println("URL Filtered:" + group.findCounter("URL_FILTERED").getValue());
+			System.out.println("URL Unreachable:" + group.findCounter("URL_UNREACHABLE").getValue());
+			System.out.println("URL Total: " + group.findCounter("URL_TOTAL").getValue());
 			return 0;
 		} else {
 			return 1;

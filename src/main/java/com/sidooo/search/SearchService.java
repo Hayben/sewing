@@ -61,6 +61,7 @@ public class SearchService {
         AnnotationConfigWebApplicationContext context = 
         		new AnnotationConfigWebApplicationContext();
         context.setConfigLocation("com.sidooo.search");
+        context.scan("com.sidooo.point2", "com.sidooo.user");
         context.getEnvironment().setDefaultProfiles("dev");
         return context;
     }

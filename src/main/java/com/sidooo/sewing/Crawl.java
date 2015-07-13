@@ -1,7 +1,12 @@
 package com.sidooo.sewing;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -30,26 +35,44 @@ public class Crawl extends Configured implements Tool {
 	
 	public static final Logger LOG = LoggerFactory.getLogger("Crawl");
 
+	
 	public static class CrawlMapper extends
 			Mapper<LongWritable, Text, Text, FetchContent> {
 
-		HttpFetcher fetcher;
+		private HttpFetcher fetcher;
+		
+		private Map<String, String> unknownHosts;
 		
 		@Override
 		public void setup(Context context) throws IOException,
 				InterruptedException {
 			fetcher = new HttpFetcher();
+			unknownHosts = new HashMap<String, String>();
 		}
 
 		@Override
 		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
-
-			FetchContent content = fetcher.fetch(value.toString());
 			
-			LOG.info("Fetch " + value.toString()  
-					+ ", Response:" + content.getStatus()
-					+ ", Size:" + content.getContentSize());
+			URI uri;
+			try {
+				uri = new URI(value.toString());
+			} catch (URISyntaxException e) {
+				context.getCounter("Sewing", "INVALID").increment(1);
+				return;
+			}
+			
+			String host = uri.getHost();
+			if (unknownHosts.get(host) != null) {
+				context.getCounter("Sewing", "SKIP").increment(1);
+				return;
+			}
+				
+			FetchContent content = fetcher.fetch(value.toString());
+			if (content.getStatus() == 198) {
+				unknownHosts.put(host, host);
+			}
+
 			if (content.getStatus() == 190) {
 				context.getCounter("Sewing", "INVALID").increment(1);
 			} else if (content.getStatus() == 200) {
@@ -60,6 +83,10 @@ public class Crawl extends Configured implements Tool {
 				context.getCounter("Sewing", "FAIL").increment(1);
 			}
 			context.write(value, content);
+			
+			LOG.info("Fetch " + value.toString()  
+					+ ", Response:" + content.getStatus()
+					+ ", Size:" + content.getContentSize());
 		}
 	}
 
@@ -100,7 +127,7 @@ public class Crawl extends Configured implements Tool {
 		// 设置分布式计算流程
 		job.setMapperClass(MultithreadedMapper.class);
 		MultithreadedMapper.setMapperClass(job, CrawlMapper.class);
-		MultithreadedMapper.setNumberOfThreads(job, VCORE_COUNT * 3);
+		MultithreadedMapper.setNumberOfThreads(job, VCORE_COUNT * 4);
 		job.setMapOutputKeyClass(Text.class);
 		job.setMapOutputValueClass(FetchContent.class);
 		
@@ -122,6 +149,8 @@ public class Crawl extends Configured implements Tool {
 			System.out.println("Duplicate Count: " + dupCount);
 			long invalidCount = group.findCounter("INVALID").getValue();
 			System.out.println("Invalid Count: " + invalidCount);
+			long skipCount = group.findCounter("SKIP").getValue();
+			System.out.println("Skip Count: " + skipCount);
 			return 0;
 		} else {
 			return 1;

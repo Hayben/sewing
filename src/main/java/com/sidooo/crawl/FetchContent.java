@@ -74,7 +74,11 @@ public class FetchContent implements Writable {
 	}
 
 	public void setContent(byte[] content, long size) {
-		this.contentSize = size;
+		if (content.length != size) {
+			this.contentSize = content.length ;
+		} else {
+			this.contentSize = size;
+		}
 		this.content = content;
 	}
 

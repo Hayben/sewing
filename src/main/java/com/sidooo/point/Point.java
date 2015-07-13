@@ -66,7 +66,12 @@ public class Point implements Writable{
 	}
 	
 	public void setTitle(String title) {
-		this.title = title;
+		
+		if (title == null) {
+			this.title = "";
+		} else {
+			this.title = title;
+		}
 	}
 	
 	public void setUrl(String url) {

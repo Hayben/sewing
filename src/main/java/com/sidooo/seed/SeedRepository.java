@@ -125,6 +125,18 @@ public class SeedRepository {
     	//update.set("config", seedConfig);
     	mongo.dropCollection(Seed.class);
     }
+    
+    public List<Seed> getSeeds(int skipCount, int limitCount) {
+    	Query query = new Query();
+    	query.skip(skipCount);
+    	query.limit(limitCount);
+    	
+    	return mongo.find(query, Seed.class);
+    }
+    
+    public long getSeedCount() {
+    	return mongo.count(new Query(), Seed.class);
+    }
 	
 	
 }

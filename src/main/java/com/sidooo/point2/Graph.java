@@ -21,9 +21,7 @@ public class Graph {
 		this.edges.add(edge);
 	}
 	
-	public Iterator<Node> nodeIterator() {
-		return this.nodes.iterator();
-	}
+
 	
 	public int getNodeCount() {
 		return nodes.size();
@@ -32,9 +30,24 @@ public class Graph {
 	public int getEdgeCount() {
 		return edges.size();
 	}
+	
+	public Node[] nodeIterator() {
+		return nodes.toArray(new Node[nodes.size()]);
+	}
 
-	public Iterator<Edge> edgeIterator() {
-		return this.edges.iterator();
+	public Edge[] edgeIterator() {
+		return edges.toArray(new Edge[edges.size()]);
+	}
+	
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		for(Node node : nodes) {
+			builder.append(node.title + ",");	
+		}
+		builder.append("\n");
+		
+		return builder.toString();
+		
 	}
 
 }

@@ -8,12 +8,13 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import org.springframework.web.servlet.view.JstlView;
 
+import com.sidooo.senode.HtableConfiguration;
 import com.sidooo.senode.MongoConfiguration;
 
 @Configuration
 @EnableWebMvc
 @ComponentScan({"com.sidooo.search"})
-@Import({ MongoConfiguration.class })
+@Import({ HtableConfiguration.class, MongoConfiguration.class })
 public class SearchConfiguration {
     @Bean
     public InternalResourceViewResolver viewResolver() {

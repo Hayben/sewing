@@ -2,9 +2,7 @@ package com.sidooo.point2;
 
 public class PointNode extends Node{
 	
-	public String id;
-	public String title;
-	public String type;
+
 	public String url;
 
 	public PointNode(Point2 point) {

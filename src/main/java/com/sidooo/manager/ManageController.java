@@ -17,8 +17,8 @@ import com.sidooo.ai.Attribute;
 import com.sidooo.ai.Recognition;
 import com.sidooo.division.DivisionService;
 import com.sidooo.point.NetworkStatus;
-import com.sidooo.point.Pagination;
 import com.sidooo.point.PointService;
+import com.sidooo.seed.Pagination;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
 import com.sidooo.sewing.TestResult;
@@ -59,24 +59,25 @@ public class ManageController {
 	// JSONArray result = divisionService.getDivisionOfCHN();
 	// }
 
-	@RequestMapping(value = "/seed/query", method = RequestMethod.GET)
-	public @ResponseBody List<Seed> getSeedList() {
+	@RequestMapping(value = "/seed/query")
+	public @ResponseBody Pagination getSeedList(
+			@RequestParam int pageNo,
+			@RequestParam int pageSize) {
 
-		List<Seed> seeds = seedService.getSeeds();
-		return seeds;
+		return seedService.getSeeds(pageNo, pageSize);
 	}
 
-	 @RequestMapping(value = "/seed/create")
-	 public @ResponseBody Seed createSeed(@RequestParam String seed) {
-		 try {
-			 seed = URLDecoder.decode(seed, "utf-8");
-		 } catch (Exception e) {
-			 e.printStackTrace();
-		 }
-		 Gson gson = new Gson();
-		 Seed newSeed = gson.fromJson(seed, Seed.class);
-		 return seedService.createSeed(newSeed);
-	 }
+	@RequestMapping(value = "/seed/create")
+	public @ResponseBody Seed createSeed(@RequestParam String seed) {
+		try {
+			seed = URLDecoder.decode(seed, "utf-8");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		Gson gson = new Gson();
+		Seed newSeed = gson.fromJson(seed, Seed.class);
+		return seedService.createSeed(newSeed);
+	}
 
 	@RequestMapping(value = "/seed/update")
 	public @ResponseBody Seed updateSeed(@RequestParam String seed) {
@@ -95,8 +96,14 @@ public class ManageController {
 	}
 
 	@RequestMapping(value = "/seed/delete")
-	public void deleteSeed(@RequestParam String id) {
-		seedService.deleteSeed(id);
+	public boolean deleteSeed(@RequestParam String id) {
+		try {
+			seedService.deleteSeed(id);
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 	@RequestMapping(value = "/seed/toggle")
@@ -279,11 +286,11 @@ public class ManageController {
 		return result;
 	}
 
-	@RequestMapping(value = "/item/list", method = RequestMethod.GET)
-	public @ResponseBody Pagination getItemList(@RequestParam String id,
-			@RequestParam int pageNo, @RequestParam int pageSize) {
-		return pointService.getItemList(id, pageNo, pageSize);
-	}
+//	@RequestMapping(value = "/item/list", method = RequestMethod.GET)
+//	public @ResponseBody Pagination getItemList(@RequestParam String id,
+//			@RequestParam int pageNo, @RequestParam int pageSize) {
+//		return pointService.getItemList(id, pageNo, pageSize);
+//	}
 
 	// @RequestMapping(value = "/item/analysis", method = RequestMethod.GET)
 	// public void analysisItem(@RequestParam String seedId,
