@@ -73,6 +73,23 @@ do
 		exit 1
 	fi
 	
+	echo "Backup Seed Database ..."
+	java -cp sewing-$VERSION.jar com.sidooo.tool.SeedBackup
+	if [ $? -ne 0 ]
+	then 
+		echo "Backup Task Fail."
+		exit 1
+	fi
+	
+	
+	echo "Run Seed Generator Task ..."
+	hadoop jar sewing-$VERSION.jar com.sidooo.sewing.SeedGenerator
+	if [ $? -ne 0 ]
+	then 
+		echo "Seed Generator Task Fail."
+		exit 1
+	fi
+	
 	((i++));
 done
 
