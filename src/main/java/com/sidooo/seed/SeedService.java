@@ -110,4 +110,8 @@ public class SeedService {
 
 		return page;
 	}
+
+	public void clearAnalysisStatistics(String id) {
+		seedRepo.clearAnalysisStatistics(id);
+	}
 }

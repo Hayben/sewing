@@ -147,6 +147,11 @@ public class Counter extends Configured implements Tool{
 			System.out.println("Seed Count is 0.");
 			return 1;
 		}
+		
+		//clear counter
+		for (Seed seed: seeds) {
+			seedService.clearAnalysisStatistics(seed.getId());
+		}
 		CacheSaver.submitSeedCache(job, seeds);
 		TaskData.submitUrldbInput(job);
 

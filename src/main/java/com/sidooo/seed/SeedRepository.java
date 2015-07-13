@@ -137,6 +137,18 @@ public class SeedRepository {
     public long getSeedCount() {
     	return mongo.count(new Query(), Seed.class);
     }
+
+	public void clearAnalysisStatistics(String seedId) {
+    	Query query = new Query();
+    	Criteria criteria = Criteria.where("id").is(seedId);
+    	query.addCriteria(criteria);
+    	
+    	Update update = new Update();
+    	update.set("statistics.point", 0);
+    	update.set("statistics.link", 0);
+    	
+    	mongo.updateFirst(query, update, Seed.class);
+	}
 	
 	
 }
