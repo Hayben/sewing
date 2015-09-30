@@ -61,10 +61,13 @@ public class ManageController {
 
 	@RequestMapping(value = "/seed/query")
 	public @ResponseBody Pagination getSeedList(
+			@RequestParam String keyword,
+			@RequestParam String level,
+			@RequestParam String reliability,
 			@RequestParam int pageNo,
 			@RequestParam int pageSize) {
 
-		return seedService.getSeeds(pageNo, pageSize);
+		return seedService.getSeeds(keyword, level, reliability, pageNo, pageSize);
 	}
 
 	@RequestMapping(value = "/seed/create")

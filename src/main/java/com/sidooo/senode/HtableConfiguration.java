@@ -27,23 +27,20 @@ public class HtableConfiguration {
 				"node4.sidooo.com,node8.sidooo.com,node13.sidooo.com");
 		
 		HBaseAdmin hbase = new HBaseAdmin(conf);
-		if (hbase.tableExists("wmouth")) {
-			hbase.disableTable("wmouth");
-			hbase.deleteTable("wmouth");
+		if (!hbase.tableExists("wmouth")) {
+			HTableDescriptor table = new HTableDescriptor("wmouth");
+			HColumnDescriptor columnPoint = new HColumnDescriptor(
+					"points".getBytes());
+			columnPoint.setMaxVersions(1);
+			HColumnDescriptor columnLink = new HColumnDescriptor(
+					"keywords".getBytes());
+			columnLink.setMaxVersions(1);
+			table.addFamily(columnPoint);
+			table.addFamily(columnLink);
+			hbase.createTable(table);
 		}
 		
-		HTableDescriptor table = new HTableDescriptor("wmouth");
-		HColumnDescriptor columnPoint = new HColumnDescriptor(
-				"points".getBytes());
-		columnPoint.setMaxVersions(1);
-		HColumnDescriptor columnLink = new HColumnDescriptor(
-				"keywords".getBytes());
-		columnLink.setMaxVersions(1);
-		table.addFamily(columnPoint);
-		table.addFamily(columnLink);
-		hbase.createTable(table);
 		hbase.close();
-
 		
 		HConnection hConnection = HConnectionManager.createConnection(conf);
 		return hConnection.getTable("wmouth");

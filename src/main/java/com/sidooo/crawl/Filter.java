@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 public class Filter {
 	
-	private static String allowFileType = "doc,docx,html,htm,xls,xlsx,pdf,csv,txt";
+	private static String allowFileType = "html,htm,xls,xlsx,csv,txt";
 
 	private boolean acceptByExt(String fileType) {
 		String[] types = allowFileType.split(",");

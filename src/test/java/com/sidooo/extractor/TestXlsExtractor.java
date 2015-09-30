@@ -17,6 +17,8 @@ import com.sidooo.point.Item;
 
 public class TestXlsExtractor {
 
+	private XlsExtractor extractor = new XlsExtractor();
+	
 	@Before
 	public void setUp() throws Exception {
 	}
@@ -29,7 +31,7 @@ public class TestXlsExtractor {
 	public void test1() throws Exception {
 		File file = new File("src/test/resources/江苏省无锡市南长区企业老总手机号码通讯名录.xls");
 		InputStream stream = new FileInputStream(file);
-		XlsExtractor extractor = new XlsExtractor();
+		
 		extractor.setUrl(file.getPath());
 		extractor.setInput(stream, null);
 		int count = 0;
@@ -46,7 +48,7 @@ public class TestXlsExtractor {
 	public void test2() throws Exception {
 		File file = new File("src/test/resources/第四十二批住房保障公示清册.xls");
 		InputStream stream = new FileInputStream(file);
-		XlsExtractor extractor = new XlsExtractor();
+		
 		extractor.setUrl(file.getPath());
 		extractor.setInput(stream, null);
 		int count = 0;

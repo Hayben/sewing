@@ -18,6 +18,8 @@ import com.sidooo.point.Item;
 
 public class TestTxtExtractor {
 
+	private TxtExtractor extractor = new TxtExtractor();
+	
 	@Before
 	public void setUp() throws Exception {
 	}
@@ -36,7 +38,7 @@ public class TestTxtExtractor {
 	public void test() throws Exception {
 		File file = new File("src/test/resources/1637_0.txt");
 		InputStream stream = new FileInputStream(file);
-		TxtExtractor extractor = new TxtExtractor();
+		
 		extractor.setUrl(file.getPath());
 		extractor.setInput(stream, null);
 		showMemorySize(1);
@@ -57,7 +59,7 @@ public class TestTxtExtractor {
 		showMemorySize(2);
 		File file = new File("src/test/resources/1637_0.txt");
 		InputStream stream = new FileInputStream(file);
-		TxtExtractor extractor = new TxtExtractor();
+		
 		extractor.setUrl(file.getPath());
 		extractor.setInput(stream, null);
 		String line = null;

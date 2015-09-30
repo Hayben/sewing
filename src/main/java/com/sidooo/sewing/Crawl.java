@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
-import com.sidooo.crawl.FetchContent;
+import com.sidooo.content.HttpContent;
 import com.sidooo.crawl.HttpFetcher;
 import com.sidooo.senode.MongoConfiguration;
 
@@ -37,7 +37,7 @@ public class Crawl extends Configured implements Tool {
 
 	
 	public static class CrawlMapper extends
-			Mapper<LongWritable, Text, Text, FetchContent> {
+			Mapper<LongWritable, Text, Text, HttpContent> {
 
 		private HttpFetcher fetcher;
 		
@@ -68,7 +68,7 @@ public class Crawl extends Configured implements Tool {
 				return;
 			}
 				
-			FetchContent content = fetcher.fetch(value.toString());
+			HttpContent content = fetcher.get(value.toString());
 			if (content.getStatus() == 198) {
 				unknownHosts.put(host, host);
 			}
@@ -91,14 +91,14 @@ public class Crawl extends Configured implements Tool {
 	}
 
 	public static class CrawlReducer extends
-			Reducer<Text, FetchContent, Text, FetchContent> {
+			Reducer<Text, HttpContent, Text, HttpContent> {
 
 		@Override
-		public void reduce(Text key, Iterable<FetchContent> values,
+		public void reduce(Text key, Iterable<HttpContent> values,
 				Context context) throws IOException, InterruptedException {
-			Iterator<FetchContent> contents = values.iterator();
+			Iterator<HttpContent> contents = values.iterator();
 			if (contents.hasNext()) {
-				FetchContent content = contents.next();
+				HttpContent content = contents.next();
 				context.write(key, content);
 				if (contents.hasNext()) {
 					context.getCounter("Sewing", "DUPLICATE").increment(1);
@@ -135,11 +135,11 @@ public class Crawl extends Configured implements Tool {
 		MultithreadedMapper.setMapperClass(job, CrawlMapper.class);
 		MultithreadedMapper.setNumberOfThreads(job, VCORE_COUNT * 8);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(FetchContent.class);
+		job.setMapOutputValueClass(HttpContent.class);
 		
 		job.setReducerClass(CrawlReducer.class);
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(FetchContent.class);
+		job.setOutputValueClass(HttpContent.class);
 		job.setNumReduceTasks(1);
 
 		boolean success = job.waitForCompletion(true);

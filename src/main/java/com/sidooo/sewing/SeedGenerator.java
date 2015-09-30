@@ -131,7 +131,7 @@ public class SeedGenerator extends Configured implements Tool{
 		// LOG.info("ZooKeeper:" + getConf().get("hbase.zookeeper.quorum"));
 		
 		Job job = new Job(getConf());
-		job.setJobName("Sewing Generator");
+		job.setJobName("Sewing Seed Generator");
 		job.setJarByClass(Generator.class);
 
 		// 设置缓存

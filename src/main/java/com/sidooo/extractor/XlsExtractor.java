@@ -46,6 +46,8 @@ public class XlsExtractor extends ContentExtractor{
 	private InputStream stream = null;
 	private String[] lines = null;
 	private int offset = 0;
+	
+	OfficeParser parser = new OfficeParser();
 
 	@Override
 	public void setInput(InputStream input, String charset) throws Exception {
@@ -57,7 +59,7 @@ public class XlsExtractor extends ContentExtractor{
 		ParseContext pcontext = new ParseContext();
 
 		// parsing the document using PDF parser
-		OfficeParser parser = new OfficeParser();
+
 		parser.parse(stream, handler, metadata, pcontext);
 		
 		lines = handler.toString().split("\n");
@@ -87,6 +89,8 @@ public class XlsExtractor extends ContentExtractor{
 			} catch (IOException e) {
 			}
 		}
+		
+		offset = 0;
 
 	}
 

@@ -71,6 +71,8 @@ public class TxtExtractor extends ContentExtractor {
 			}
 		}
 		
+		modeLarge = false;
+		
 	}
 
 }

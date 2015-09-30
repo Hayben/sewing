@@ -24,9 +24,10 @@ import org.springframework.stereotype.Service;
 
 import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
+import com.sidooo.content.HttpContent;
 import com.sidooo.counter.CountService;
-import com.sidooo.crawl.FetchContent;
 import com.sidooo.extractor.ContentExtractor;
+import com.sidooo.extractor.ExtractorManager;
 import com.sidooo.point.Item;
 import com.sidooo.point.Link;
 import com.sidooo.point.LinkRepository;
@@ -53,7 +54,7 @@ public class MongoExtractor extends Configured implements Tool {
 	private PointService pointService;
 
 	public static class ExtractMapper extends
-			Mapper<Text, FetchContent, Keyword, Text> {
+			Mapper<Text, HttpContent, Keyword, Text> {
 
 		private Recognition recognition;
 
@@ -62,6 +63,8 @@ public class MongoExtractor extends Configured implements Tool {
 		private PointRepository pointRepo;
 
 		private CountService countService;
+		
+		private ExtractorManager manager;
 
 		@Override
 		public void setup(Context context) throws IOException,
@@ -89,6 +92,8 @@ public class MongoExtractor extends Configured implements Tool {
 
 			countService = appcontext.getBean("countService",
 					CountService.class);
+			
+			manager = new ExtractorManager();
 
 
 		}
@@ -100,7 +105,7 @@ public class MongoExtractor extends Configured implements Tool {
 		}
 
 		@Override
-		public void map(Text key, FetchContent fetch, Context context)
+		public void map(Text key, HttpContent fetch, Context context)
 				throws IOException, InterruptedException {
 
 			String url = key.toString();
@@ -120,17 +125,17 @@ public class MongoExtractor extends Configured implements Tool {
 
 			// 根据爬虫的应答头部识别文件格式
 			if (mime != null && mime.length() > 0) {
-				extractor = ContentExtractor.getInstanceByMime(mime);
+				extractor = manager.getInstanceByMime(mime);
 			}
 
 			// 根据后缀名识别出文件格式
 			if (extractor == null) {
-				extractor = ContentExtractor.getInstanceByUrl(url);
+				extractor = manager.getInstanceByUrl(url);
 			}
 
 			// 根据内容识别文件格式
 			if (extractor == null) {
-				extractor = ContentExtractor.getInstanceByContent(content);
+				extractor = manager.getInstanceByContent(content);
 			}
 
 			if (extractor == null) {

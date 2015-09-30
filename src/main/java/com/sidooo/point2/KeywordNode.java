@@ -7,9 +7,22 @@ public class KeywordNode extends Node{
 	private String attr;
 	
 	public KeywordNode(Keyword keyword) {
-		this.id = keyword.getWord();
-		this.title = keyword.getWord();
-		this.type = "link";
+		setType("link");
+		setId(keyword.getWord());
+		setLabel(keyword.getWord());
+		
 		this.attr = keyword.getAttr();
+	}
+	
+	public KeywordNode(String companyName) {
+		setType("link");
+		setId(companyName);
+		setLabel(companyName);
+		
+		this.attr = "nt";
+	}
+
+	public String getAttr() {
+		return this.attr;
 	}
 }

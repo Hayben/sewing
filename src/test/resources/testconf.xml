@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<province name="test" host="http://www.test.com/">
+		<connect path="province"></connect>
+		<var name="id" method="split" key="," index="3"></var>
+		<refer>refer/test</refer>
+		<save from="bureau" type="registration"></save>
+		<for name="page" start="1">
+			<submit path="test/test.html">
+				<field name="pageNo">$page</field>
+			</submit>
+			<save from="corpration" type="permission"></save>
+		</for>
+	</province>
+	<province name="test1" host="http://archive.sidooo.com/">
+		<connect path="data/test"></connect>
+	</province>
+	<province name="test2" host="http://archive.sidooo.com/">
+		<connect path="data/test"></connect>
+	</province>
+</root>

@@ -30,7 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
-import com.sidooo.crawl.FetchContent;
+import com.sidooo.content.HttpContent;
 import com.sidooo.crawl.FetchRecord;
 import com.sidooo.crawl.FetchResult;
 import com.sidooo.crawl.Filter;
@@ -52,11 +52,13 @@ public class UrlDatabase extends Configured implements Tool {
 	private SeedService seedService;
 
 	public static class FetchContentMapper extends
-			Mapper<Text, FetchContent, FetchRecord, FetchResult> {
+			Mapper<Text, HttpContent, FetchRecord, FetchResult> {
 
 		private List<Seed> seeds;
 
 		protected Filter filter = new Filter();
+		
+		private final int HTML_MAX_SIZE = 2*1024*1024;
 
 		@Override
 		public void setup(Context context) throws IOException,
@@ -92,13 +94,15 @@ public class UrlDatabase extends Configured implements Tool {
 		}
 
 		@Override
-		protected void map(Text key, FetchContent value, Context context)
+		protected void map(Text key, HttpContent value, Context context)
 				throws IOException, InterruptedException {
 
 			String url = key.toString();
 			LOG.info("Url: " + key.toString() + ",Charset: "
 					+ value.getContentCharset());
-			if (value.getStatus() == 200 && value.getContent() != null) {
+			if (value.getStatus() == 200 
+					&& value.getContent() != null 
+					&& value.getContentSize() < HTML_MAX_SIZE) {
 				String contentType = value.getContentType();
 				if (contentType == null || contentType.length() <= 0) {
 					// ContentType存在Body中
@@ -198,7 +202,6 @@ public class UrlDatabase extends Configured implements Tool {
 		public GroupingComparator() {
 			super(FetchRecord.class, true);
 		}
-		
 		
 		@Override
 		public int compare(WritableComparable a, WritableComparable b) {

@@ -16,16 +16,20 @@ public class PdfExtractor extends ContentExtractor {
 	private InputStream stream = null;
 	private String content = null;
 	
+	PDFParser pdfparser = new PDFParser();
+	
+	ParseContext pcontext = new ParseContext();
+	
 	@Override
 	public void setInput(InputStream input, String charset) throws Exception {
 		stream = input;
 		setTitle(FilenameUtils.getBaseName(path));
 		BodyContentHandler handler = new BodyContentHandler(MAX_SIZE);
 		Metadata metadata = new Metadata();
-		ParseContext pcontext = new ParseContext();
+		
 
 		// parsing the document using PDF parser
-		PDFParser pdfparser = new PDFParser();
+		
 		pdfparser.parse(stream, handler, metadata, pcontext);
 
 		content = handler.toString();
@@ -47,6 +51,10 @@ public class PdfExtractor extends ContentExtractor {
 				stream.close();
 			} catch (IOException e) {
 			}
+		}
+		
+		if (content != null) {
+			content = null;
 		}
 		
 	}

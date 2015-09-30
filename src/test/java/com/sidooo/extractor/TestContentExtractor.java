@@ -8,8 +8,10 @@ import org.junit.Test;
 
 public class TestContentExtractor {
 
+	ExtractorManager manager; 
 	@Before
 	public void setUp() throws Exception {
+		manager = new ExtractorManager();
 	}
 
 	@After
@@ -18,51 +20,52 @@ public class TestContentExtractor {
 
 	@Test
 	public void testGetInstance() {
-		ContentExtractor extractor;
+		
+		ContentExtractor extractor = null;
 		String url = null;
 		
 		url = "http://test.com/abc/a.csv";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof CsvExtractor);
 		
 		url = "http://test.com/feing/b.xls";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof XlsExtractor);
 		
 		url = "http://test.com/feing/c.xlsx";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof XlsxExtractor);
 		
 		url = "http://test.com/feing/b.pdf";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof PdfExtractor);
 		
 		url = "http://test.com/feing/b.doc";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof DocExtractor);
 		
 		url = "http://test.com/feing/b.docx";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof DocxExtractor);
 		
 		url = "http://test.com/feing/b.html";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof HtmlExtractor);
 		
 		url = "http://test.com/feing/b.htm";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof HtmlExtractor);
 		
 		url = "http://test.com/feing/b.htm";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor instanceof HtmlExtractor);
 		
 		url = "http://test.com/feing/b";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor == null);
 		
 		url = "http://test.com/feing/b/";
-		extractor = ContentExtractor.getInstanceByUrl(url);
+		extractor = manager.getInstanceByUrl(url);
 		assertTrue(extractor == null);
 	}
 

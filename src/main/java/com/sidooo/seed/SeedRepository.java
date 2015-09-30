@@ -126,16 +126,30 @@ public class SeedRepository {
     	mongo.dropCollection(Seed.class);
     }
     
-    public List<Seed> getSeeds(int skipCount, int limitCount) {
+    public List<Seed> getSeeds(String keyword, String level, String reliability, 
+    		int skipCount, int limitCount) {
     	Query query = new Query();
     	query.skip(skipCount);
     	query.limit(limitCount);
+    	Criteria criteria = Criteria.where("level").is(level);
+    	query.addCriteria(criteria);
+    	criteria = Criteria.where("reliability").is(reliability);
+    	query.addCriteria(criteria);
+    	criteria = Criteria.where("name").regex("*"+keyword+"*");
+    	query.addCriteria(criteria);
     	
     	return mongo.find(query, Seed.class);
     }
     
-    public long getSeedCount() {
-    	return mongo.count(new Query(), Seed.class);
+    public long getSeedCount(String keyword, String level, String reliability) {
+    	Query query = new Query();
+    	Criteria criteria = Criteria.where("level").is(level);
+    	query.addCriteria(criteria);
+    	criteria = Criteria.where("reliability").is(reliability);
+    	query.addCriteria(criteria);
+    	criteria = Criteria.where("name").regex("*"+keyword+"*");
+    	query.addCriteria(criteria);
+    	return mongo.count(query, Seed.class);
     }
 
 	public void clearAnalysisStatistics(String seedId) {

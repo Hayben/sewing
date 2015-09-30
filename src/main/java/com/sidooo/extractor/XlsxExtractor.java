@@ -35,6 +35,8 @@ public class XlsxExtractor extends ContentExtractor{
 	private InputStream stream = null;
 	private String[] lines = null;
 	private int offset = 0;
+	
+	OOXMLParser parser = new OOXMLParser();
 
 	@Override
 	public void setInput(InputStream stream, String charset) throws Exception {
@@ -45,7 +47,7 @@ public class XlsxExtractor extends ContentExtractor{
 		ParseContext pcontext = new ParseContext();
 
 		// OOXml parser
-		OOXMLParser parser = new OOXMLParser();
+
 		parser.parse(stream, handler, metadata, pcontext);
 		
 		lines = handler.toString().split("\n");
@@ -74,6 +76,8 @@ public class XlsxExtractor extends ContentExtractor{
 			} catch (IOException e) {
 			}
 		}
+		
+		offset = 0;
 		
 	}
 }

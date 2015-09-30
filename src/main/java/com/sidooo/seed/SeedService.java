@@ -99,11 +99,13 @@ public class SeedService {
 		return null;
 	}
 	
-	public Pagination getSeeds(int pageNo, int pageSize) {
-		long totalCount = seedRepo.getSeedCount();
+	public Pagination getSeeds(
+			String keyword, String level, String reliability,
+			int pageNo, int pageSize) {
+		long totalCount = seedRepo.getSeedCount(keyword, level, reliability);
 		Pagination page = new Pagination(pageNo, pageSize, totalCount);
 
-		List<Seed> seeds = seedRepo.getSeeds(page.getFirstResult(), pageSize);		
+		List<Seed> seeds = seedRepo.getSeeds(keyword, level, reliability, page.getFirstResult(), pageSize);		
 		for (Seed seed : seeds) {
 			page.addSeed(seed);
 		}

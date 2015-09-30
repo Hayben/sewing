@@ -24,7 +24,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sidooo.crawl.FetchContent;
+import com.sidooo.content.HttpContent;
 import com.sidooo.seed.Seed;
 
 public class TaskData {
@@ -211,11 +211,11 @@ public class TaskData {
 
 		SequenceFile.Writer writer = null;
 		writer = SequenceFile.createWriter(hdfs, job.getConfiguration(),
-				seedFile, Text.class, FetchContent.class,
+				seedFile, Text.class, HttpContent.class,
 				CompressionType.RECORD, new SnappyCodec());
 
 		for (Seed seed : seeds) {
-			FetchContent content = new FetchContent();
+			HttpContent content = new HttpContent();
 			content.setStatus(0);
 			writer.append(new Text(seed.getUrl()), content);
 		}

@@ -32,10 +32,15 @@ import org.springframework.stereotype.Service;
 import com.google.gson.Gson;
 import com.sidooo.ai.Keyword;
 import com.sidooo.ai.Recognition;
+import com.sidooo.content.HttpContent;
 import com.sidooo.counter.CountService;
-import com.sidooo.crawl.FetchContent;
 import com.sidooo.crawl.Filter;
 import com.sidooo.extractor.ContentExtractor;
+import com.sidooo.extractor.DocExtractor;
+import com.sidooo.extractor.DocxExtractor;
+import com.sidooo.extractor.ExtractorManager;
+import com.sidooo.extractor.HtmlExtractor;
+import com.sidooo.extractor.PdfExtractor;
 import com.sidooo.point.Point;
 import com.sidooo.seed.Seed;
 import com.sidooo.seed.SeedService;
@@ -52,7 +57,7 @@ public class HbaseExtractor extends Configured implements Tool {
 	private SeedService seedService;
 
 	public static class ExtractMapper extends
-			Mapper<Text, FetchContent, Keyword, Point> {
+			Mapper<Text, HttpContent, Keyword, Point> {
 
 		private Recognition recognition;
 
@@ -70,6 +75,16 @@ public class HbaseExtractor extends Configured implements Tool {
 		private int errRecognite = 0;
 		private int errNoKeyword = 0;
 		private int errTinyKey = 0;
+		private int errSizeLimit = 0;
+		private int errSkip = 0;
+		
+		private final long MAX_SIZE = 10 * 1024 * 1024; 
+		private final long PDF_MAX_SIZE = 2 * 1024 * 1024;
+		private final long DOC_MAX_SIZE = 2 * 1024 * 1024;
+		private final long DOCX_MAX_SIZE = 2 * 1024 * 1024;
+		private final long HTML_MAX_SIZE = 2 * 1024 * 1024;
+		
+		private ExtractorManager manager = new ExtractorManager();
 		
 		@Override
 		public void setup(Context context) throws IOException,
@@ -112,6 +127,8 @@ public class HbaseExtractor extends Configured implements Tool {
 			context.getCounter("Sewing", "ERR_NOKEYWORD").increment(errNoKeyword);
 			context.getCounter("Sewing", "ERR_RECOGNITE").increment(errRecognite);
 			context.getCounter("Sewing", "ERR_TINYKEY").increment(errTinyKey);
+			context.getCounter("Sewing", "ERR_SIZE").increment(errSizeLimit);
+			context.getCounter("Sewing", "ERR_SKIP").increment(errSkip);
 			
 			for(Seed seed : seeds) {
 				seedService.incAnalysisStatistics(seed.getId(), seed.getPointCount(), seed.getLinkCount());
@@ -119,13 +136,18 @@ public class HbaseExtractor extends Configured implements Tool {
 		}
 
 		@Override
-		public void map(Text key, FetchContent fetch, Context context)
+		public void map(Text key, HttpContent fetch, Context context)
 				throws IOException, InterruptedException {
 
 			String url = key.toString();
 
 			Seed seed = SeedService.getSeedByUrl(url, seeds);
 			if (seed == null) {
+				errSizeLimit ++;
+				return;
+			}
+			
+			if (fetch.getContentSize() >= MAX_SIZE) {
 				return;
 			}
 
@@ -149,7 +171,7 @@ public class HbaseExtractor extends Configured implements Tool {
 			
 			// 根据爬虫的应答头部识别文件格式
 			if (mime != null && mime.length() > 0) {
-				extractor = ContentExtractor.getInstanceByMime(mime);
+				extractor = manager.getInstanceByMime(mime);
 			}
 
 			// 根据后缀名识别出文件格式
@@ -157,18 +179,18 @@ public class HbaseExtractor extends Configured implements Tool {
 				String filename = fetch.getContentFilename();
 				if (filename != null) {
 					if (filter.accept(filename)) {
-						extractor = ContentExtractor.getInstanceByUrl(filename);
+						extractor = manager.getInstanceByUrl(filename);
 					} else {
 						return;
 					}
 				}else {
-					extractor = ContentExtractor.getInstanceByUrl(url);
+					extractor = manager.getInstanceByUrl(url);
 				}
 			}
 
 			// 根据内容识别文件格式
 			if (extractor == null) {
-				extractor = ContentExtractor.getInstanceByContent(content);
+				extractor = manager.getInstanceByContent(content);
 			}
 
 			if (extractor == null) {
@@ -177,12 +199,47 @@ public class HbaseExtractor extends Configured implements Tool {
 			}
 			
 			LOG.info("Extractor:" + extractor.getClass().getName());
+			if (extractor instanceof DocExtractor) {
+//				if (content.length >= DOC_MAX_SIZE) {
+//					this.errSizeLimit++;
+//					extractor.close();
+//					return;
+//				}
+				this.errSkip++;
+				return;
+			} else if (extractor instanceof DocxExtractor) {
+//				if (content.length >= DOCX_MAX_SIZE) {
+//					this.errSizeLimit++;
+//					extractor.close();
+//					return;
+//				}
+				this.errSkip++;
+				return;
+			} else if (extractor instanceof PdfExtractor) {
+//				if (content.length >= PDF_MAX_SIZE) {
+//					this.errSizeLimit ++;
+//					extractor.close();
+//					return;
+//				}
+				this.errSkip++;
+				return;
+			} else if (extractor instanceof HtmlExtractor) {
+				if (content.length >= HTML_MAX_SIZE) {
+					this.errSizeLimit ++;
+					extractor.close();
+					return;
+				}
+			} else {
+				
+			}
+			
 
 			extractor.setUrl(url);
 			ByteArrayInputStream input = new ByteArrayInputStream(content);
 			try {
 				extractor.setInput(input, null);
 			} catch (Exception e1) {
+				extractor.close();
 				this.errInput ++;
 				return;
 			}
@@ -278,13 +335,13 @@ public class HbaseExtractor extends Configured implements Tool {
 	public int run(String[] arg0) throws Exception {
 
 		Configuration conf = getConf();
-		conf.setInt("mapreduce.map.cpu.vcores", 4);
+		conf.setInt("mapreduce.map.cpu.vcores", 2);
 		LOG.info("mapreduce.map.cpu.vcores : " + getConf().getInt("mapreduce.map.cpu.vcores", 1));
 				
-		conf.set("mapreduce.map.memory.mb", "1536");
+		conf.set("mapreduce.map.memory.mb", "2048");
 		LOG.info("mapreduce.map.memory.mb : " + getConf().get("mapreduce.map.memory.mb"));
 		
-		conf.set("mapreduce.map.java.opts.max.heap", "1200");
+		conf.set("mapreduce.map.java.opts.max.heap", "1700");
 		LOG.info("mapreduce.map.java.opts.max.heap : " + getConf().get("mapreduce.map.java.opts.max.heap"));
 		
 		Job job = new Job(getConf());
@@ -297,7 +354,7 @@ public class HbaseExtractor extends Configured implements Tool {
 		CacheSaver.submitNlpCache(job);
 
 		// 设置输入
-		TaskData.submitTestCrawlInput(job);
+		TaskData.submitCrawlInput(job);
 
 		// 设置计算流程
 		job.setMapperClass(ExtractMapper.class);
@@ -342,28 +399,21 @@ public class HbaseExtractor extends Configured implements Tool {
 				+ conf.get("hbase.zookeeper.quorum"));
 
 		HBaseAdmin hbase = new HBaseAdmin(conf);
-		if (hbase.tableExists("wmouth")) {
-			hbase.disableTable("wmouth");
-			hbase.deleteTable("wmouth");
+		if (!hbase.tableExists("wmouth")) {
+			LOG.info("Create HBase Table: wmouth");
+			HTableDescriptor table = new HTableDescriptor("wmouth");
+			HColumnDescriptor columnPoint = new HColumnDescriptor(
+					"points".getBytes());
+			columnPoint.setMaxVersions(1);
+			HColumnDescriptor columnLink = new HColumnDescriptor(
+					"keywords".getBytes());
+			columnLink.setMaxVersions(1);
+			table.addFamily(columnPoint);
+			table.addFamily(columnLink);
+			hbase.createTable(table);
 		}
 		
-
-		LOG.info("Create HBase Table: wmouth");
-		HTableDescriptor table = new HTableDescriptor("wmouth");
-		HColumnDescriptor columnPoint = new HColumnDescriptor(
-				"points".getBytes());
-		columnPoint.setMaxVersions(1);
-		HColumnDescriptor columnLink = new HColumnDescriptor(
-				"keywords".getBytes());
-		columnLink.setMaxVersions(1);
-		table.addFamily(columnPoint);
-		table.addFamily(columnLink);
-		hbase.createTable(table);
-
 		LOG.info("Create HBase Table wmouth successful.");
-
-		
-		
 
 		hbase.close();
 

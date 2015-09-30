@@ -26,8 +26,9 @@ public class SearchController {
 			@RequestParam int depth) throws Exception {
 		Graph graph = pointService.getGraph(key);
 		if (graph != null) {
-			System.out.println("Point:" + graph.getNodeCount() + ",Keyword:"
-					+ graph.getEdgeCount());
+			System.out.println(graph.toString());
+			System.out.println("Point:" + graph.getNodeCount() + 
+					",Edge:" + graph.getEdgeCount());
 		}
 		return graph;
 	}

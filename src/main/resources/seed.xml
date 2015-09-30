@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<seed name="京东商城" domain="jd.com">
+		<parser host="http://www.jd.com">
+			<!-- category -->
+			<select method="jquery" key="div.subitems dd a[href]" attribute="href">
+			</select>
+		</parser>
+		<parser host="http://list.jd.com">
+			<!-- page -->
+			<select method="jquery" key="div.p-wrap span.p-num a[href]" attribute="href">
+			</select>
+			<!--item-->
+			<select method="jquery" key="li.gl-item div.p-name a[href]" attribute="href">
+			</select>
+		</parser>
+
+	</seed>
+	<seed name="当当网" domain="dangdang.com">
+		<!-- category -->
+		<parser host="http://www.dangdang.com">
+			<select method="jquery" key="li div.e a[href]" attribute="href">
+			</select>
+		</parser>
+		<parser host="http://category.dangdang.com">
+			<!-- page -->
+			<select method="jquery" key="div.paging ul li a[href]" attribute="href">
+			</select>
+			<!-- item -->
+			<select method="jquery" key="div.content_list div.shop_box_inner p.name a[href]" attribute="href">
+			</select>
+		</parser>
+	</seed>
+<!-- 	<seed name="淘宝网" domain="taobao.com"> -->
+<!-- 		<parser host="https://www.taobao.com"> -->
+<!-- 			<!-- category --> -->
+<!-- 			<select method="jquery" key="div.cat-item ul.cat-detail li a[href]" attribute="href"></select>	 -->
+<!-- 		</parser> -->
+<!-- 	</seed> -->
+	<seed name="亚马逊" domain="amazon.cn">
+		<parser host="http://www.amazon.cn">
+			<!-- category -->
+			<select method="jquery" key="div.nav-subcat-links a[href]" attribute="href">
+			</select>
+			<!-- page -->
+			<select method="jquery" key="div.pageHy span a[href]" attribute="href">
+			</select>
+			<!-- item -->
+			<select method="jquery" key="div.s-item-container div.a-spacing-none a[href]" attribute="href">
+			</select>
+		</parser>
+	</seed>
+	<seed name="1号店" domain="yhd.com">
+		<parser host="http://www.yhd.com">
+			<!-- category -->
+			<select method="jquery" key="div.hd_sort_list dl.clearfix dd a[href]" attribute="href">
+			</select>
+		</parser>
+		<parser host="http://list.yhd.com">
+		</parser>
+		<parser host="http://item.yhd.com">
+			<!-- item -->
+			<select method="jquery" key="div.search_item_box a[producthref]" attribute="producthref">
+			</select>
+		</parser>
+	</seed>
+</root>

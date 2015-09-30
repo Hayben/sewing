@@ -132,8 +132,7 @@ public class TestRecognition extends TestCase {
 				assertTrue(false);
 			}
 		}
-		
-		
+
 	}
 	
 	@Test

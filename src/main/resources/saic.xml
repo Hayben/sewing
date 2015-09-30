@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<province name="辽宁省" url="http://gsxt.lngs.gov.cn/saicpub/">
+	</province>
+
+	<province name="北京市" host="http://qyxy.baic.gov.cn">
+		<connect path="/beijing"></connect>
+	</province>
+
+	<province name="天津市" host="http://tjcredit.gov.cn">
+		<connect path="/platform/saic/index.ftl"></connect>
+	</province>
+
+	<province name="河北省" url="http://www.hebscztxyxx.gov.cn/notice/">
+	</province>
+
+	<province name="山西省" url="http://218.26.1.108/search.jspx">
+	</province>
+
+	<province name="内蒙古自治区" url="http://www.nmgs.gov.cn:7001/aiccips/">
+	</province>
+
+	<province name="吉林省" url="http://211.141.74.198:8081/aiccips/">
+	</province>
+
+	<province name="黑龙江省" url="http://222.171.175.16:9080/ECPS/search.jspx">
+	</province>
+
+	<province name="上海市" url="https://www.sgs.gov.cn/notice/home">
+	</province>
+
+	<province name="江苏省" host="http://www.jsgsj.gov.cn:58888">
+
+		<connect path="/province"></connect>
+
+		<!-- <span id="updateVerifyCode1"> <img border="0" src="/province/rand_img.jsp?type=7&amp;temp=Tue 
+			Jul 21 2015 12:10:19 GMT+0800 (中国标准时间)" width="120px" height="43px"> </span> -->
+		<captcha method="jquery" key="#updateVerifyCode1 img[src]"></captcha>
+
+		<!-- loginAgain: -->
+		<!-- typeHidden: -->
+		<!-- typeName:无锡市天茂胶辊有限公司 -->
+		<!-- verifyCode:WsQ6kG -->
+		<!-- staff_code2: -->
+		<!-- password2: -->
+		<!-- verifyCode2:请输入右侧验证码 -->
+		<!-- state: -->
+		<!-- admit_main: -->
+		<!-- status: -->
+		<!-- staff_code3: -->
+		<!-- password3: -->
+		<!-- verifyCode3:请输入右侧验证码 -->
+		<submit path="/province/queryResultList.jsp">
+			<field name="typeName">$company</field>
+			<field name="verifyCode">$captcha</field>
+		</submit>
+		
+<!-- 		<div id="punishResult" style=" width: 990px; margin: 0 auto 10px; height:500px;" align="center"> -->
+<!-- 			<dl class="list"> -->
+<!-- 				<dt> -->
+<!-- 					<a href="javascript:void(0)" onclick="queryInfor('/ecipplatform/inner_ci/ci_queryCorpInfor_gsRelease.jsp','1022','23200210','3','320282000190134','ecipplatform')">无锡市天茂胶辊有限公司</a>  -->
+<!-- 				</dt> -->
+<!-- 				<dd>注册号:<span>320282000190134</span>     法定代表人:<span>黄伟</span>     登记机关:<span>宜兴市市场监督管理局</span>     成立日期:<span>2008年01月21日</span> -->
+<!-- 				</dd><br> -->
+<!-- 				<font color="red">&nbsp;&nbsp;&nbsp;&nbsp;</font> -->
+<!-- 			</dl> -->
+<!-- 		</div> -->
+		<select method="jquery" key="dl.list dt a[onclick]" index="0" attribute="onclick"></select>
+
+		<!-- <a href="javascript:void(0)" onclick="queryInfor('/ecipplatform/inner_ci/ci_queryCorpInfor_gsRelease.jsp','1022','23200210','3','320282000190134','ecipplatform')">无锡市天茂胶辊有限公司</a> -->
+		<var name="org" method="split" key="," index="2" attribute="trim"></var>
+		
+		<var name="id" method="split" key="," index="3" attribute="trim"></var>
+		
+		<var name="seq_id" method="split" key="," index="4" attribute="trim"></var>
+		
+		<var name="reg_no" method="split" key="," index="5" attribute="trim"></var>
+
+		<refer>/ecipplatform/inner_ci/ci_queryCorpInfor_gsRelease.jsp</refer>
+		//基本信息
+		<submit path="/ecipplatform/ciServlet.json?ciEnter=true">
+			<field name="org">$org</field>
+			<field name="id">$id</field>
+			<field name="seq_id">$seq_id</field>
+			<field name="specificQuery">basicInfo</field>
+		</submit>
+		<save from="bureau" type="registration"></save>
+
+		//主要人员信息
+		<submit path="/ecipplatform/ciServlet.json?ciEnter=true">
+			<input name="CORP_ORG">$org</input>
+			<input name="CORP_ID">$id</input>
+			<input name="CORP_SEQ_ID">$seq_id</input>
+			<input name="specificQuery">personnelInformation</input>
+			<input name="showRecordLine">1</input>
+			<input name="pageNo">1</input>
+			<input name="pageSize">5</input>
+		</submit>
+		<save from="bureau" type="registration"></save>
+
+		//股东发起人
+		<for name="page" start="1">
+			<form submit="/ecipplatform/ciServlet.json?ciEnter=true">
+				<input name="CORP_ORG">$org</input>
+				<input name="CORP_ID">$id</input>
+				<input name="CORP_SEQ_ID">$seq_id</input>
+				<input name="specificQuery">investmentInfor</input>
+				<input name="showRecordLine">1</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</form>
+			<save from="bureau" type="investor"></save>
+		</for>
+
+		//变更
+		<for name="page" start="1">
+			<form submit="/ecipplatform/commonServlet.json?commonEnter=true">
+				<input name="corp_org">$org</input>
+				<input name="corp_id">$id</input>
+				<input name="tmp">$ticket</input>
+				<input name="propertiesName">biangeng</input>
+				<input name="specificQuery">commonQuery</input>
+				<input name="showRecordLine">1</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</form>
+			<save from="bureau" type="investor"></save>
+		</for>
+
+
+		//分支机构信息
+		<for name="page" start="1">
+			<form submit="/ecipplatform/ciServlet.json?ciEnter=true">
+				<input name="CORP_ORG">$org</input>
+				<input name="CORP_ID">$id</input>
+				<input name="CORP_SEQ_ID">$seq_id</input>
+				<input name="specificQuery">branchOfficeInfor</input>
+				<input name="CORP_SEQ_ID">$seq_id</input>
+				<input name="showRecordLine">1</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</form>
+			<save from="bureau" type="branch"></save>
+		</for>
+
+		//动产抵押信息
+		<for name="page" start="1">
+			<submit path="/ecipplatform/commonServlet.json?commonEnter=true">
+				<input name="corp_org">$org</input>
+				<input name="corp_id">$id</input>
+				<input name="corp_seq_id">$seq_id</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">commonQuery</input>
+				<input name="propertiesName">dongchan</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="bureau" type="mortgage"></save>
+		</for>
+
+		//股权抵押
+		<for name="page" start="1">
+			<submit path="/ecipplatform/commonServlet.json?commonEnter=true">
+				<input name="corp_org">$org</input>
+				<input name="corp_id">$id</input>
+				<input name="corp_seq_id">$seq_id</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">commonQuery</input>
+				<input name="propertiesName">guquanchuzhi</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="bureau" type="mortgage"></save>
+		</for>
+
+		//知识产权抵押
+		<for name="page" start="1">
+			<submit path="/ecipplatform/nbServlet.json?nbEnter=true">
+				<input name="REG_NO">$reg_no</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">gs_pb</input>
+				<input name="propertiesName">query_zscq</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="bureau" type="mortgage"></save>
+		</for>
+
+		//行政处罚
+		<for name="page" start="1">
+			<submit path="/ecipplatform/commonServlet.json?commonEnter=true">
+				<input name="corp_org">$org</input>
+				<input name="corp_id">$id</input>
+				<input name="corp_seq_id">$seq_id</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">commonQuery</input>
+				<input name="propertiesName">chufa</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="bureau" type="penalty"></save>
+		</for>
+
+
+		//经营异常
+		<for name="page" start="1">
+			<submit path="/ecipplatform/commonServlet.json?commonEnter=true">
+				<input name="corp_org">$org</input>
+				<input name="corp_id">$id</input>
+				<input name="corp_seq_id">$seq_id</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">commonQuery</input>
+				<input name="propertiesName">abnormalInfor</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="bureau" type="abnormity"></save>
+		</for>
+
+		//抽检
+		<for name="page" start="1">
+			<submit path="/ecipplatform/commonServlet.json?commonEnter=true">
+				<input name="corp_org">$org</input>
+				<input name="corp_id">$id</input>
+				<input name="corp_seq_id">$seq_id</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">commonQuery</input>
+				<input name="propertiesName">checkup</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="bureau" type="inspection"></save>
+		</for>
+
+
+		//清算信息
+		<submit path="/ecipplatform/ciServlet.json?ciEnter=true">
+			<input name="CORP_ORG">$org</input>
+			<input name="CORP_ID">$id</input>
+			<input name="CORP_SEQ_ID">$seq_id</input>
+			<input name="specificQuery">qsfzr</input>
+		</submit>
+		<save from="bureau" type="liquidation"></save>
+
+		//企业年报
+		<refer>/ecipplatform/inner_ci/ci_queryCorpInfor_qyRelease.jsp</refer>
+		<submit path="/ecipplatform/nbServlet.json?nbEnter=true">
+			<input name="REG_NO">$reg_no</input>
+			<input name="showRecordLine">0</input>
+			<input name="specificQuery">gs_pb</input>
+			<input name="propertiesName">query_report_list</input>
+			<input name="tmp">$ticket</input>
+		</submit>
+		<save from="corpration" type="annual"></save>
+
+		//出资人信息
+		<for name="page" start="1">
+			<submit path="/ecipplatform/nbServlet.json?nbEnter=true">
+				<input name="REG_NO">$reg_no</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">gs_pb</input>
+				<input name="propertiesName">query_tzcz</input>
+				<input name="tmp">$ticket</input>
+				<input name="ADMIT_MAIN">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="corpration" type="investor"></save>
+		</for>
+
+		//行政许可
+		<for name="page" start="1">
+			<submit path="/ecipplatform/nbServlet.json?nbEnter=true">
+				<input name="REG_NO">$reg_no</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">gs_pb</input>
+				<input name="propertiesName">query_xzxk</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="corpration" type="permission"></save>
+		</for>
+
+		//行政处罚
+		<for name="page" start="1">
+			<submit path="/ecipplatform/nbServlet.json?nbEnter=true">
+				<input name="REG_NO">$reg_no</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">gs_pb</input>
+				<input name="propertiesName">query_xzcf</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="corpration" type="penalty"></save>
+		</for>
+
+		//股权冻结
+		<refer>/ecipplatform/inner_ci/ci_queryJudicialAssistance.jsp</refer>
+		<for name="page" start="1">
+			<form submit="/ecipplatform/commonServlet.json?commonEnter=true">
+				<input name="corp_org">$org</input>
+				<input name="corp_id">$id</input>
+				<input name="corp_seq_id">$seq_id</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">commonQuery</input>
+				<input name="propertiesName">gqdjList</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">1</input>
+				<input name="pageSize">5</input>
+			</form>
+			<save from="justice" type="equity"></save>
+		</for>
+
+		//股权变更
+		<for name="page" start="1">
+			<submit path="/ecipplatform/commonServlet.json?commonEnter=true">
+				<input name="corp_org">$org</input>
+				<input name="corp_id">$id</input>
+				<input name="corp_seq_id">$seq_id</input>
+				<input name="showRecordLine">1</input>
+				<input name="specificQuery">commonQuery</input>
+				<input name="propertiesName">gqbgList</input>
+				<input name="tmp">$ticket</input>
+				<input name="pageNo">$page</input>
+				<input name="pageSize">5</input>
+			</submit>
+			<save from="justice" type="equity"></save>
+		</for>
+
+	</province>
+
+	<province name="浙江省" url="http://gsxt.zjaic.gov.cn/zhejiang.jsp">
+	</province>
+
+	<province name="安徽省" url="http://www.ahcredit.gov.cn/search.jspx">
+	</province>
+
+	<province name="福建省" url="http://wsgs.fjaic.gov.cn/creditpub/home">
+	</province>
+
+	<province name="广东省" url="http://gsxt.gdgs.gov.cn/aiccips/">
+	</province>
+
+	<province name="广西壮族自治区" url="http://gxqyxygs.gov.cn/search.jspx">
+	</province>
+
+	<province name="海南省" url="http://aic.hainan.gov.cn:1888/aiccips">
+	</province>
+
+	<province name="河南省" url="http://222.143.24.157/search.jspx">
+
+	</province>
+
+	<province name="湖北省" url="http://xyjg.egs.gov.cn/">
+		<connect path="ECPS_HB/index.jsp"></connect>
+	</province>
+
+	<province name="湖南省" url="http://gsxt.hnaic.gov.cn/notice/">
+	</province>
+
+	<province name="重庆市" url="http://gsxt.cqgs.gov.cn/">
+	</province>
+
+	<province name="四川省" host="http://gsxt.scaic.gov.cn/">
+		<connect path="ztxy.do?method=index&random=1437292838287"></connect>
+	</province>
+
+	<province name="贵州省" url="http://gsxt.gzgs.gov.cn/">
+	</province>
+
+	<province name="云南省" url="http://gsxt.ynaic.gov.cn/notice/">
+	</province>
+
+	<province name="陕西省" url="http://117.22.252.219:8002/p/ent2">
+	</province>
+
+	<province name="甘肃省" url="http://xygs.gsaic.gov.cn/gsxygs/">
+	</province>
+
+	<province name="宁夏回族自治区" url="http://gsxt.ngsh.gov.cn/ECPS/index.jsp">
+	</province>
+
+	<province name="新疆维吾尔族自治区" host="http://gsxt.xjaic.gov.cn:7001/">
+		<connect path="ztxy.do?method=index&random=1437293116868"></connect>
+	</province>
+
+
+</root>

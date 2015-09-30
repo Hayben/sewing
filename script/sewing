@@ -8,8 +8,9 @@ usage()
 
 ROUND=0
 EXTRACT=0
+SEED=0
 
-ARG=`getopt r:eh $*`
+ARG=`getopt r:esh $*`
 
 set --$ARG;
 
@@ -21,6 +22,9 @@ do
 		;;
 	e)
 		EXTRACT=1
+		;;
+	s)
+		SEED=1
 		;;
 	h|help)
 		usage
@@ -73,6 +77,12 @@ do
 		exit 1
 	fi
 	
+
+	((i++));
+done
+
+if [ $SEED -eq 1 ]
+then
 	echo "Backup Seed Database ..."
 	java -cp sewing-$VERSION.jar com.sidooo.tool.SeedBackup
 	if [ $? -ne 0 ]
@@ -81,7 +91,6 @@ do
 		exit 1
 	fi
 	
-	
 	echo "Run Seed Generator Task ..."
 	hadoop jar sewing-$VERSION.jar com.sidooo.sewing.SeedGenerator
 	if [ $? -ne 0 ]
@@ -89,9 +98,8 @@ do
 		echo "Seed Generator Task Fail."
 		exit 1
 	fi
+fi
 	
-	((i++));
-done
 
 if [ $EXTRACT -eq 1 ]
 then

@@ -27,7 +27,7 @@ import org.xml.sax.SAXException;
 
 public class ContentDetector {
 
-	private Tika tika = new Tika();
+//	private Tika tika = new Tika();
 	
 	public ContentType detect(InputStream input) {
 		
@@ -90,9 +90,9 @@ public class ContentDetector {
 		}
          
          
-         for (String name : meta.names()) {
-               System.out.println(name + ":\t" + meta.get(name));
-         }
+//         for (String name : meta.names()) {
+//               System.out.println(name + ":\t" + meta.get(name));
+//         }
          
          String attr = meta.get("Content-Type");
          if (attr != null) {

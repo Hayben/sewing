@@ -14,6 +14,9 @@ public class DocExtractor extends ContentExtractor{
 	private InputStream stream  = null;
 	private String content = null;
 	
+	OfficeParser parser = new OfficeParser();
+	ParseContext pcontext = new ParseContext();
+	
 	@Override
 	public void setInput(InputStream stream, String charset) throws Exception {
 		this.stream = stream;
@@ -21,10 +24,10 @@ public class DocExtractor extends ContentExtractor{
 		
 		BodyContentHandler handler = new BodyContentHandler(MAX_SIZE);
 		Metadata metadata = new Metadata();
-		ParseContext pcontext = new ParseContext();
+		
 
 		// parsing the document using PDF parser
-		OfficeParser parser = new OfficeParser();
+
 		parser.parse(stream, handler, metadata, pcontext);
 
 		content =  handler.toString();
@@ -46,6 +49,10 @@ public class DocExtractor extends ContentExtractor{
 				stream.close();
 			} catch (IOException e) {
 			}
+		}
+		
+		if (content != null) {
+			content = null;
 		}
 		
 	}

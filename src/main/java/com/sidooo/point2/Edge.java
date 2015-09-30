@@ -10,11 +10,11 @@ public class Edge {
 		this.to = to;
 	}
 	
-	public String from() {
+	public String getFrom() {
 		return this.from;
 	}
 	
-	public String to() {
+	public String getTo() {
 		return this.to;
 	}
 	

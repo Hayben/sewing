@@ -43,6 +43,8 @@ public class LinkExtractor extends ContentExtractor {
 		if (links != null) {
 			links = null;
 		}
+		
+		offset = 0;
 	}
 	
 //	public void extractLink(InputStream stream) {

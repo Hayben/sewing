@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
-import com.sidooo.crawl.FetchContent;
+import com.sidooo.content.HttpContent;
 import com.sidooo.senode.MongoConfiguration;
 
 @Service("merger")
@@ -28,10 +28,10 @@ public class Merger extends Configured implements Tool {
 	public static final Logger LOG = LoggerFactory.getLogger("Merger");
 	
 	public static class MergeMapper extends
-			Mapper<Text, FetchContent, Text, FetchContent> {
+			Mapper<Text, HttpContent, Text, HttpContent> {
 
 		@Override
-		public void map(Text key, FetchContent value, Context context)
+		public void map(Text key, HttpContent value, Context context)
 				throws IOException, InterruptedException {
 			
 			context.getCounter("Sewing", "INPUT").increment(1);
@@ -42,14 +42,14 @@ public class Merger extends Configured implements Tool {
 	}
 
 	public static class MergeReducer extends
-			Reducer<Text, FetchContent, Text, FetchContent> {
+			Reducer<Text, HttpContent, Text, HttpContent> {
 
 		@Override
-		public void reduce(Text key, Iterable<FetchContent> values,
+		public void reduce(Text key, Iterable<HttpContent> values,
 				Context context) throws IOException, InterruptedException {
-			Iterator<FetchContent> it = values.iterator();
+			Iterator<HttpContent> it = values.iterator();
 			if (it.hasNext()) {
-				FetchContent content = it.next();
+				HttpContent content = it.next();
 				context.write(key, content);
 				context.getCounter("Sewing", "OUTPUT").increment(1);
 			}
@@ -89,10 +89,10 @@ public class Merger extends Configured implements Tool {
 
 		job.setMapperClass(MergeMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(FetchContent.class);
+		job.setMapOutputValueClass(HttpContent.class);
 		job.setReducerClass(MergeReducer.class);
 		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(FetchContent.class);
+		job.setOutputValueClass(HttpContent.class);
 		job.setNumReduceTasks(1);
 
 		boolean success = job.waitForCompletion(true);

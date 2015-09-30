@@ -9,7 +9,34 @@ import org.springframework.stereotype.Service;
 public class DivisionService {
 
 	@Autowired
-    private DivisionRepository divisionRepo;
+    private DivisionRepository repo;
+	
+	
+	public Division getDivisionByCompanyName(String comName) {
+		
+		String name = comName.substring(0, 2);
+		
+		Division div = repo.getDivsionByName(name);
+		if (div == null) {
+			name = comName.substring(0, 3);
+			div = repo.getDivsionByName(name);
+			if (div == null) {
+				name = comName.substring(0, 4);
+				div = repo.getDivsionByName(name);	
+			}
+		}
+		return div;
+	}
+	
+	public Division getProvince(Division division) {
+		
+		Division province = division;
+		while (province.getLevel() != 1) {
+			province = repo.getDivision(division.getParentId());
+		}
+		
+		return province;
+	}
 	
 //	private JSONArray cache = null;
 //	
